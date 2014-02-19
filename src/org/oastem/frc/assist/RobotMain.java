@@ -63,6 +63,7 @@ public class RobotMain extends SimpleRobot {
     private Victor leftDrive2 = new Victor(7);
     //*/
     private DigitalInput fireLim = new DigitalInput(1);
+    private DigitalInput winchLin = new DigitalInput(2);
     private long lastUpdate;
     private String[] debug = new String[6];
     private Joystick left = new Joystick(1);
@@ -284,6 +285,7 @@ public class RobotMain extends SimpleRobot {
                 // HOLY CRAP STOP
                 drive.set(TRIGGER_PORT, 0);
                 drive.set(WINCH_PORT, 0);
+                winch.deactivate();
                 winchMovePressed = false;
                 triggerHasFired = false;
                 triggerStart = 0L;
@@ -324,7 +326,7 @@ public class RobotMain extends SimpleRobot {
                 outtakePressed = false;
             }
             
-            if (left.getRawButton(EVERYTHING_BUTTON) || triggerStart > 0L ){
+            if (left.getRawButton(TRIGGER_BUTTON) || triggerStart > 0L ){
                 
                 if (triggerStart == 0L){
                     triggerStart = currentTime;
@@ -341,10 +343,10 @@ public class RobotMain extends SimpleRobot {
                     }
                 }
                 else {
-                    if(currentTime - triggerStart > 300L && afterFired && !winchWiggled){
+                    if(currentTime - triggerStart > 500L && afterFired && !winchWiggled){
                         if(winchWiggleCount < 1){
                             winchWiggleCount++;
-                            wiggleWinch(0.10);
+                            wiggleWinch(-0.15);
                         }
                         else {
                             wiggleWinch(0);
@@ -356,6 +358,7 @@ public class RobotMain extends SimpleRobot {
                     else if(currentTime - triggerStart > 100L && afterFired){
                         winch.deactivate();
                         winchWiggled = false;
+                        winchWiggleCount = 0;
                     }
                     if (!triggerHasFired && !afterFired) drive.set(TRIGGER_PORT, TRIGGER_SPEED_UP);
                     if (currentTime - triggerStart > 600L && !triggerHasFired) {
@@ -388,7 +391,7 @@ public class RobotMain extends SimpleRobot {
                 }
             }
             
-            
+            /**
             if (left.getRawButton(TRIGGER_BUTTON) || triggerStart > 0L){
                 // Trigger the trigger
                 if (triggerStart == 0L) triggerStart = currentTime;
@@ -412,6 +415,7 @@ public class RobotMain extends SimpleRobot {
                     triggerStart = 0L;
                 }
             }
+            //*/
             
             
             if (left.getRawButton(TRIGGER_BUTTON_UP)) {
