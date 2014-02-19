@@ -28,7 +28,7 @@ import org.oastem.frc.control.VexSpike;
  * directory.
  */
 public class RobotMain extends SimpleRobot {
-    public static final int WINCH_MOTOR = 1;
+    public static final int WINCH_PORT = 1;
     public static final int RIGHT_DRIVE_FRONT = 4;
     public static final int RIGHT_DRIVE_REAR = 5;
     public static final int LEFT_DRIVE_REAR = 7;
@@ -43,9 +43,11 @@ public class RobotMain extends SimpleRobot {
     public static final int OUTTAKE_BUTTON = 7;
     public static final int TRIGGER_BUTTON_UP = 3;
     public static final int TRIGGER_BUTTON_DOWN = 2;
-    public static final int WINCH_UP = 11;
-    public static final int WINCH_DOWN = 10;
-    public static final int WINCH_SPIKE_BUTTON = 8;
+    public static final int WINCH_BUTTON_UP = 11;
+    public static final int WINCH_BUTTON_DOWN = 10;
+    public static final int WINCH_BUTTON_SPIKE = 8;
+    public static final int EMERGENCY_STOP_BUTTON = 4;
+    public static final int EVERYTHING_BUTTON = 5;
     
     private static final double TRIGGER_SPEED_UP = -0.75;
     private static final double TRIGGER_SPEED_DOWN = 0.25;
@@ -114,7 +116,7 @@ public class RobotMain extends SimpleRobot {
         intake = new VexSpike(INTAKE_SPIKE);
         winch = new VexSpike(WINCH_SPIKE);
         drive.addVictor(TRIGGER_PORT);
-        drive.addVictor(WINCH_MOTOR);
+        drive.addVictor(WINCH_PORT);
         //trigger = new Victor(TRIGGER_VICTOR);
         
         cc = new CriteriaCollection();      // create the criteria for the particle filter
@@ -247,45 +249,42 @@ public class RobotMain extends SimpleRobot {
      */
     public void operatorControl() {
         debug[0] = "User Control Mode";
-        //SmartDashboard.putNumber("Camera", 0.0);
-        //Victor cam = new Victor(8);
         boolean triggerHasFired = false;
         boolean intakePressed = false;
         boolean outtakePressed = false;
         boolean winchPressed = false;
         boolean winchMovePressed = false;
+        boolean winchWiggled = false;
+        boolean afterFired = false;
+        int winchWiggleCount = 0;
         long triggerStart = 0L;
          while(isOperatorControl() && isEnabled()) {
             double speed = left.getY() * joyScale;
             long currentTime = System.currentTimeMillis();
-            joyScale = Math.min(1.0, scaleZ(left.getZ()));
-            joyScale2 = Math.min(1.0, scaleZ(right.getZ()));
+            joyScale = scaleZ(left.getZ());
+            joyScale2 = scaleZ(right.getZ());
             debug[1] = "Speed: " + speed;                                                          
             
             
-            if(left.getRawButton(WINCH_UP)){
-                drive.set(WINCH_MOTOR, 1.0);
+            if(left.getRawButton(WINCH_BUTTON_UP)){
+                drive.set(WINCH_PORT, 1.0);
+                winchMovePressed = true;
+            } else if(left.getRawButton(WINCH_BUTTON_DOWN)){
+                drive.set(WINCH_PORT, -1.0);
                 winchMovePressed = true;
             }
             
-            if(left.getRawButton(WINCH_DOWN)){
-                drive.set(WINCH_MOTOR, -1.0);
-                winchMovePressed = true;
-            }
-            
-            if( !(left.getRawButton(WINCH_UP)) && winchMovePressed){
-                drive.set(WINCH_MOTOR, 0);
+            if (winchMovePressed && (!left.getRawButton(WINCH_BUTTON_UP) || 
+                    !left.getRawButton(WINCH_BUTTON_DOWN))) {
+                drive.set(WINCH_PORT, 0);
                 winchMovePressed = false;
             }
             
-            if( !(left.getRawButton(WINCH_DOWN)) && winchMovePressed){
-                drive.set(WINCH_MOTOR, 0);
-                winchMovePressed = false;
-            }
-            
-            if (left.getRawButton(4)) {
+            if (left.getRawButton(EMERGENCY_STOP_BUTTON)) {
                 // HOLY CRAP STOP
                 drive.set(TRIGGER_PORT, 0);
+                drive.set(WINCH_PORT, 0);
+                winchMovePressed = false;
                 triggerHasFired = false;
                 triggerStart = 0L;
                 debug[0] = "Soft Emergency Stop";
@@ -293,12 +292,10 @@ public class RobotMain extends SimpleRobot {
                 return;
             }
             
-            if(left.getRawButton(WINCH_SPIKE_BUTTON)){
+            if(left.getRawButton(WINCH_BUTTON_SPIKE)){
                 winch.goForward(); // hopefully yes
                 winchPressed = true;
-            }
-            
-            if( !(left.getRawButton(WINCH_SPIKE_BUTTON)) && winchPressed){
+            } else if( !(left.getRawButton(WINCH_BUTTON_SPIKE)) && winchPressed){
                 winch.deactivate();
                 winchPressed = false;
             }
@@ -306,15 +303,12 @@ public class RobotMain extends SimpleRobot {
             this.doingWinchStuff(debug);
             
             this.doArcadeDrive(debug);
-            //drive.arcadeDrive( left);
             
             // Intake
             if (left.getRawButton(INTAKE_BUTTON)){
                 intake.goForward();
                 intakePressed = true;
-            }
-            
-            if (!(left.getRawButton(INTAKE_BUTTON)) && intakePressed){
+            } else if (!(left.getRawButton(INTAKE_BUTTON)) && intakePressed){
                 intake.deactivate();
                 intakePressed = false;
             }
@@ -329,6 +323,71 @@ public class RobotMain extends SimpleRobot {
                 intake.deactivate();
                 outtakePressed = false;
             }
+            
+            if (left.getRawButton(EVERYTHING_BUTTON) || triggerStart > 0L ){
+                
+                if (triggerStart == 0L){
+                    triggerStart = currentTime;
+                    winch.goForward();
+                }
+                else if (currentTime - triggerStart > 300L && !winchWiggled && !triggerHasFired && !afterFired){
+                    if(winchWiggleCount < 1){
+                        winchWiggleCount++;
+                        wiggleWinch(0.10);
+                    }
+                    else {
+                        winchWiggled = true;
+                        wiggleWinch(0);
+                    }
+                }
+                else {
+                    if(currentTime - triggerStart > 300L && afterFired && !winchWiggled){
+                        if(winchWiggleCount < 1){
+                            winchWiggleCount++;
+                            wiggleWinch(0.10);
+                        }
+                        else {
+                            wiggleWinch(0);
+                            afterFired = false;
+                            winchWiggleCount = 0;
+                            triggerStart = 0L;
+                        }
+                    }
+                    else if(currentTime - triggerStart > 100L && afterFired){
+                        winch.deactivate();
+                        winchWiggled = false;
+                    }
+                    if (!triggerHasFired && !afterFired) drive.set(TRIGGER_PORT, TRIGGER_SPEED_UP);
+                    if (currentTime - triggerStart > 600L && !triggerHasFired) {
+                        drive.set(TRIGGER_PORT, 0);
+                        triggerHasFired = true;
+                        triggerStart = currentTime;
+                    }
+                    if (triggerHasFired && currentTime - triggerStart > 1000L) {
+                        drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
+                        for (; fireLim.get();) {
+                            long theTime = System.currentTimeMillis();
+                            if (theTime - triggerStart > 4000L) {
+                                debug[2] = "WTFBBQ";
+                                break;
+                            }
+                        }
+                        drive.set(TRIGGER_PORT, 0);
+                        triggerHasFired = false;
+                        
+                        //triggerStart = 0L;
+                       //winch.deactivate();
+                       //winchWiggled = false;
+                       afterFired = true;
+                       //winchWiggled = false;
+                       //winchWiggleCount = 0;
+                    }
+                    
+                    //sleepBro(100);
+                    //wiggleWinch();
+                }
+            }
+            
             
             if (left.getRawButton(TRIGGER_BUTTON) || triggerStart > 0L){
                 // Trigger the trigger
@@ -354,34 +413,32 @@ public class RobotMain extends SimpleRobot {
                 }
             }
             
+            
             if (left.getRawButton(TRIGGER_BUTTON_UP)) {
                 // Window motor positive
-                //trigger.set(TRIGGER_SPEED);
                 drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
             } else if (left.getRawButton(TRIGGER_BUTTON_DOWN)) {
                 // Window motor negative
-                //trigger.set(-TRIGGER_SPEED);
                 drive.set(TRIGGER_PORT, TRIGGER_SPEED_UP);
             } else if (triggerStart == 0L) {
                 //trigger.set(0);
                 drive.set(TRIGGER_PORT, 0);
             }
             
-            //cam.set(SmartDashboard.getNumber("Slider 1"));
             
             long timeDelta = currentTime - lastUpdate;
             if (timeDelta > 250) {
-                // Debug.clear();
+                Debug.clear();
                 ticks = currentTime;
             }
-            //spike.deactivate();
+            
             Debug.log(debug);
             lastUpdate = System.currentTimeMillis();
          }
     }
          
     private double scaleZ(double rawZ) {
-        return 0.5 - 0.5 * rawZ;
+        return Math.min(1.0, 0.5 - 0.5 * rawZ);
     }
     
     private void doingWinchStuff(String[] debug){
@@ -394,8 +451,22 @@ public class RobotMain extends SimpleRobot {
         winchMove *= joyScale2 * -1;
         
         debug[5] = "rScale: "+joyScale2+" Winch: "+winchMove;
-        drive.set(WINCH_MOTOR, winchMove);
+        drive.set(WINCH_PORT, winchMove);
     }
+    
+    
+    private void wiggleWinch(double pow){
+        drive.set(WINCH_PORT,pow);
+    }
+    
+    /**private void sleepBro(int time){
+        try{
+            Thread.sleep(time);
+        }
+        catch(Exception e){
+            // we should be going here
+        }
+    }//*/
     
      private void doArcadeDrive(String[] debug) {
         double leftMove = 0.0;
@@ -406,8 +477,6 @@ public class RobotMain extends SimpleRobot {
 
         double x = left.getX() * -1;
         double y = left.getY();
-        
-        //System.out.println(left.getX() + ":" + left.getY());
 
         if (Math.abs(y) > zone) {
             leftMove = y;
