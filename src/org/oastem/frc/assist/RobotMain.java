@@ -28,20 +28,24 @@ import org.oastem.frc.control.VexSpike;
  * directory.
  */
 public class RobotMain extends SimpleRobot {
+    public static final int WINCH_MOTOR = 1;
     public static final int RIGHT_DRIVE_FRONT = 4;
     public static final int RIGHT_DRIVE_REAR = 5;
     public static final int LEFT_DRIVE_REAR = 7;
     public static final int LEFT_DRIVE_FRONT = 6;
     public static final int INTAKE_SPIKE = 7;
-    public static final int TRIGGER_SPIKE = 8;
-    private static final int TRIGGER_PORT = 2;
+    public static final int WINCH_SPIKE = 8;
+    public static final int TRIGGER_PORT = 2;
     
     // Buttons:
     public static final int INTAKE_BUTTON = 6;
     public static final int TRIGGER_BUTTON = 1;
     public static final int OUTTAKE_BUTTON = 7;
-    private static final int TRIGGER_BUTTON_UP = 3;
-    private static final int TRIGGER_BUTTON_DOWN = 2;
+    public static final int TRIGGER_BUTTON_UP = 3;
+    public static final int TRIGGER_BUTTON_DOWN = 2;
+    public static final int WINCH_UP = 11;
+    public static final int WINCH_DOWN = 10;
+    public static final int WINCH_SPIKE_BUTTON = 8;
     
     private static final double TRIGGER_SPEED_UP = -0.75;
     private static final double TRIGGER_SPEED_DOWN = 0.25;
@@ -49,7 +53,7 @@ public class RobotMain extends SimpleRobot {
     private DriveSystem drive = DriveSystem.getInstance();
     
     private VexSpike intake;
-    private VexSpike neutral;
+    private VexSpike winch;
     
     /**private Victor rightDrive1 = new Victor(4);
     private Victor rightDrive2 = new Victor(5);
@@ -60,8 +64,10 @@ public class RobotMain extends SimpleRobot {
     private long lastUpdate;
     private String[] debug = new String[6];
     private Joystick left = new Joystick(1);
+    private Joystick right = new Joystick(2);
     //private Victor trigger;
     private double joyScale = 1.0;
+    private double joyScale2 = 1.0;
     private long ticks = 0;
     final int XMAXSIZE = 24;
     final int XMINSIZE = 24;
@@ -106,8 +112,9 @@ public class RobotMain extends SimpleRobot {
         drive.initializeDrive(LEFT_DRIVE_FRONT, LEFT_DRIVE_REAR, RIGHT_DRIVE_FRONT, RIGHT_DRIVE_REAR);
         drive.setSafety(false);
         intake = new VexSpike(INTAKE_SPIKE);
-        neutral = new VexSpike(TRIGGER_SPIKE);
+        winch = new VexSpike(WINCH_SPIKE);
         drive.addVictor(TRIGGER_PORT);
+        drive.addVictor(WINCH_MOTOR);
         //trigger = new Victor(TRIGGER_VICTOR);
         
         cc = new CriteriaCollection();      // create the criteria for the particle filter
@@ -245,12 +252,36 @@ public class RobotMain extends SimpleRobot {
         boolean triggerHasFired = false;
         boolean intakePressed = false;
         boolean outtakePressed = false;
+        boolean winchPressed = false;
+        boolean winchMovePressed = false;
         long triggerStart = 0L;
          while(isOperatorControl() && isEnabled()) {
             double speed = left.getY() * joyScale;
             long currentTime = System.currentTimeMillis();
             joyScale = Math.min(1.0, scaleZ(left.getZ()));
+            joyScale2 = Math.min(1.0, scaleZ(right.getZ()));
             debug[1] = "Speed: " + speed;                                                          
+            
+            
+            if(left.getRawButton(WINCH_UP)){
+                drive.set(WINCH_MOTOR, 1.0);
+                winchMovePressed = true;
+            }
+            
+            if(left.getRawButton(WINCH_DOWN)){
+                drive.set(WINCH_MOTOR, -1.0);
+                winchMovePressed = true;
+            }
+            
+            if( !(left.getRawButton(WINCH_UP)) && winchMovePressed){
+                drive.set(WINCH_MOTOR, 0);
+                winchMovePressed = false;
+            }
+            
+            if( !(left.getRawButton(WINCH_DOWN)) && winchMovePressed){
+                drive.set(WINCH_MOTOR, 0);
+                winchMovePressed = false;
+            }
             
             if (left.getRawButton(4)) {
                 // HOLY CRAP STOP
@@ -261,6 +292,18 @@ public class RobotMain extends SimpleRobot {
                 Debug.log(debug);
                 return;
             }
+            
+            if(left.getRawButton(WINCH_SPIKE_BUTTON)){
+                winch.goForward(); // hopefully yes
+                winchPressed = true;
+            }
+            
+            if( !(left.getRawButton(WINCH_SPIKE_BUTTON)) && winchPressed){
+                winch.deactivate();
+                winchPressed = false;
+            }
+            
+            this.doingWinchStuff(debug);
             
             this.doArcadeDrive(debug);
             //drive.arcadeDrive( left);
@@ -341,6 +384,19 @@ public class RobotMain extends SimpleRobot {
         return 0.5 - 0.5 * rawZ;
     }
     
+    private void doingWinchStuff(String[] debug){
+        double y = right.getY();
+        double winchMove = 0.0;
+        double zone = 0.04;
+        if(Math.abs(y) > zone){
+            winchMove = y;
+        }
+        winchMove *= joyScale2 * -1;
+        
+        debug[5] = "rScale: "+joyScale2+" Winch: "+winchMove;
+        drive.set(WINCH_MOTOR, winchMove);
+    }
+    
      private void doArcadeDrive(String[] debug) {
         double leftMove = 0.0;
         double rightMove = 0.0;
@@ -366,8 +422,7 @@ public class RobotMain extends SimpleRobot {
         leftMove *= joyScale * -1;
         rightMove *= joyScale * -1;
         debug[3] = "Scale: " + joyScale;
-        debug[4] = "Left: " + leftMove;
-        debug[5] = "Right: " + rightMove;
+        debug[4] = "Left: " + leftMove +" Right: "+rightMove;
 
         drive.tankDrive(leftMove, rightMove);
     }
