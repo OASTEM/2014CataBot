@@ -57,6 +57,30 @@ public class RobotMain extends SimpleRobot {
     private VexSpike intake;
     private VexSpike winch;
     
+    // STATES
+    public static final int START = 0;
+    public static final int STARTPULL = 1;
+    public static final int READY = 2;
+    public static final int RELEASE = 3;
+    public static final int FIRING = 4;
+    public static final int RESET = 5;
+    public static final int PULL = 6;
+    public static final int LOOSEN = 7;
+    
+    public static final String[] STATE_ARRAY = {
+        "Start",
+        "releasing intakes",
+        "ready to fire",
+        "releasing winchGear",
+        "firing this mofo",
+        "putting things back",
+        "this winch be tripping",
+        "much loose"
+    };
+    
+    
+    private int state;
+    
     /**private Victor rightDrive1 = new Victor(4);
     private Victor rightDrive2 = new Victor(5);
     private Victor leftDrive1 = new Victor(6);
@@ -109,7 +133,7 @@ public class RobotMain extends SimpleRobot {
     protected void robotInit(){
         Debug.clear();
         Debug.log(1, 1, "Robot Initalized");
-        
+        state = START;
         lastUpdate = System.currentTimeMillis();
         
         drive.initializeDrive(LEFT_DRIVE_FRONT, LEFT_DRIVE_REAR, RIGHT_DRIVE_FRONT, RIGHT_DRIVE_REAR);
@@ -266,7 +290,7 @@ public class RobotMain extends SimpleRobot {
             joyScale = scaleZ(left.getZ());
             joyScale2 = scaleZ(right.getZ());
             debug[1] = "Speed: " + speed;                                                          
-            
+            debug[2] = STATE_ARRAY[state];
             
             if(left.getRawButton(WINCH_BUTTON_UP)){
                 drive.set(WINCH_PORT, 1.0);
@@ -367,6 +391,40 @@ public class RobotMain extends SimpleRobot {
                 }
             }
             
+            
+            switch(state){
+                case READY : 
+                    if(left.getRawButton(TRIGGER_BUTTON)){
+                    state = RELEASE;
+                    triggerStart = currentTime;
+                } 
+                break;
+                case RELEASE : 
+                    if(release(currentTime, triggerStart)){
+                        triggerStart = currentTime;
+                        state = FIRING;
+                    }
+                    //triggerStart = currentTime;
+                    break;//
+                case FIRING : 
+                    if(firing(currentTime, triggerStart)){
+                        triggerStart = currentTime;
+                        state = RESET;
+                    }
+                    break;
+                case RESET : 
+                    if(resetting(currentTime, triggerStart)){
+                        triggerStart = currentTime;
+                        state = PULL;
+                    }
+                    break;
+                case PULL : pulling(currentTime, triggerStart); break;//
+                case LOOSEN : loosening(currentTime, triggerStart); break;//
+                default : break; //nothing should be happening here
+            }
+            /**
+             * Rewrite this to a switch case
+             */
             if (left.getRawButton(TRIGGER_BUTTON) || triggerStart > 0L ){
                 if (triggerStart == 0L){
                     triggerStart = currentTime;
@@ -479,6 +537,52 @@ public class RobotMain extends SimpleRobot {
         return Math.min(1.0, 0.5 - 0.5 * rawZ);
     }
     
+    private boolean release(long currTime, long trigStart){
+        winch.goForward();
+        return releaseGear(currTime, trigStart);
+    }
+    
+    private boolean releaseGear(long currTime, long trigStart){
+        if(currTime - trigStart > 500L){
+            wiggleWinch(0);
+            return true;
+        }
+        else if(currTime - trigStart > 100L ){
+            wiggleWinch(0.10);
+        }
+        return false;
+    }
+    
+    private boolean firing(long currTime, long trigStart){
+        if (currTime - trigStart > 1600L){
+            return true;
+        }
+        else if(currTime - trigStart > 600L){
+            drive.set(TRIGGER_PORT, 0);
+        }
+        else {
+            drive.set(TRIGGER_PORT, TRIGGER_SPEED_UP);
+        }
+        return false;
+    }
+    
+    private boolean resetting(long currTime, long trigStart){
+        winch.deactivate();
+        if(releaseGear(currTime,trigStart)){
+            if(!fireLim.get() && currTime - trigStart < 4000L){
+                drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
+                return false;
+            }
+            drive.set(TRIGGER_PORT, 0);
+            return true;
+        }
+        return false;
+    }
+    
+    private boolean pulling(long currTime, long trigStart){
+        
+    }
+    
     private void doingWinchStuff(String[] debug){
         double y = right.getY();
         double winchMove = 0.0;
@@ -498,6 +602,7 @@ public class RobotMain extends SimpleRobot {
     
     /**
      * Guys we need to test this shit
+     * we would put this into the firing method (at the end)
      */
     private void pullWinchBack(){
         if(!winchLin.get()){
