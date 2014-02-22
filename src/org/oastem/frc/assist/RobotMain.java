@@ -47,7 +47,7 @@ public class RobotMain extends SimpleRobot {
     public static final int WINCH_BUTTON_DOWN = 10;
     public static final int WINCH_BUTTON_SPIKE = 8;
     public static final int EMERGENCY_STOP_BUTTON = 4;
-    public static final int EVERYTHING_BUTTON = 5;
+    public static final int SECONDARY_FIRE_BUTTON = 5;
     
     private static final double TRIGGER_SPEED_UP = -0.75;
     private static final double TRIGGER_SPEED_DOWN = 0.25;
@@ -259,6 +259,7 @@ public class RobotMain extends SimpleRobot {
         boolean afterFired = false;
         int winchWiggleCount = 0;
         long triggerStart = 0L;
+        long secondaryTriggerStart = 0L;
          while(isOperatorControl() && isEnabled()) {
             double speed = left.getY() * joyScale;
             long currentTime = System.currentTimeMillis();
@@ -294,6 +295,21 @@ public class RobotMain extends SimpleRobot {
                 return;
             }
             
+            if(right.getRawButton(9)){
+                winch.deactivate();
+                drive.set(WINCH_PORT, 0);
+                triggerHasFired = false;
+         intakePressed = false;
+         outtakePressed = false;
+         winchPressed = false;
+         winchMovePressed = false;
+         winchWiggled = false;
+         afterFired = false;
+         winchWiggleCount = 0;
+         triggerStart = 0L;
+         secondaryTriggerStart = 0L;
+            }
+            
             if(left.getRawButton(WINCH_BUTTON_SPIKE)){
                 winch.goForward(); // hopefully yes
                 winchPressed = true;
@@ -326,68 +342,86 @@ public class RobotMain extends SimpleRobot {
                 outtakePressed = false;
             }
             
+            if (left.getRawButton(SECONDARY_FIRE_BUTTON) || secondaryTriggerStart > 0L){
+                if (secondaryTriggerStart == 0L){
+                    secondaryTriggerStart = currentTime;
+                }
+                if(!triggerHasFired) drive.set(TRIGGER_PORT, TRIGGER_SPEED_UP);
+                if (currentTime - secondaryTriggerStart > 600L && !triggerHasFired) {
+                    drive.set(TRIGGER_PORT, 0);
+                    triggerHasFired = true;
+                    secondaryTriggerStart = currentTime;
+                }
+                if (triggerHasFired && currentTime - secondaryTriggerStart > 1000L) {
+                    drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
+                    for (; fireLim.get();) {
+                        long theTime = System.currentTimeMillis();
+                        if (theTime - secondaryTriggerStart > 4000L) {
+                            debug[2] = "WTFBBQ";
+                            break;
+                        }
+                    }
+                    drive.set(TRIGGER_PORT, 0);
+                    triggerHasFired = false;
+                    secondaryTriggerStart = 0L;
+                }
+            }
+            
             if (left.getRawButton(TRIGGER_BUTTON) || triggerStart > 0L ){
-                
                 if (triggerStart == 0L){
                     triggerStart = currentTime;
                     winch.goForward();
                 }
-                else if (currentTime - triggerStart > 300L && !winchWiggled && !triggerHasFired && !afterFired){
+                else if (currentTime - triggerStart > 100L && !winchWiggled && !triggerHasFired && !afterFired){
                     if(winchWiggleCount < 1){
                         winchWiggleCount++;
                         wiggleWinch(0.10);
                     }
-                    else {
+                    else if(currentTime - triggerStart > 500L ){
                         winchWiggled = true;
                         wiggleWinch(0);
                     }
+                    else{
+                        drive.set(TRIGGER_PORT, TRIGGER_SPEED_UP);
+                    }
                 }
                 else {
-                    if(currentTime - triggerStart > 500L && afterFired && !winchWiggled){
+                    if(afterFired && !winchWiggled){
                         if(winchWiggleCount < 1){
                             winchWiggleCount++;
-                            wiggleWinch(-0.15);
+                            wiggleWinch(0.15);
+                            triggerStart = currentTime;
                         }
-                        else {
+                        else if(currentTime - triggerStart > 500L) {
                             wiggleWinch(0);
                             afterFired = false;
                             winchWiggleCount = 0;
                             triggerStart = 0L;
                         }
                     }
-                    else if(currentTime - triggerStart > 100L && afterFired){
-                        winch.deactivate();
-                        winchWiggled = false;
-                        winchWiggleCount = 0;
-                    }
-                    if (!triggerHasFired && !afterFired) drive.set(TRIGGER_PORT, TRIGGER_SPEED_UP);
-                    if (currentTime - triggerStart > 600L && !triggerHasFired) {
-                        drive.set(TRIGGER_PORT, 0);
-                        triggerHasFired = true;
-                        triggerStart = currentTime;
-                    }
-                    if (triggerHasFired && currentTime - triggerStart > 1000L) {
-                        drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
-                        for (; fireLim.get();) {
-                            long theTime = System.currentTimeMillis();
-                            if (theTime - triggerStart > 4000L) {
-                                debug[2] = "WTFBBQ";
-                                break;
-                            }
+                    else{
+                        if (currentTime - triggerStart > 600L && !triggerHasFired) {
+                            drive.set(TRIGGER_PORT, 0);
+                            triggerHasFired = true;
+                            triggerStart = currentTime;
                         }
-                        drive.set(TRIGGER_PORT, 0);
-                        triggerHasFired = false;
-                        
-                        //triggerStart = 0L;
-                       //winch.deactivate();
-                       //winchWiggled = false;
-                       afterFired = true;
-                       //winchWiggled = false;
-                       //winchWiggleCount = 0;
+                        if (triggerHasFired && currentTime - triggerStart > 1000L) {
+                            drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
+                            winch.deactivate();
+                            for (; fireLim.get();) {
+                                long theTime = System.currentTimeMillis();
+                                if (theTime - triggerStart > 4000L) {
+                                    debug[2] = "WTFBBQ";
+                                    break;
+                                }
+                            }
+                            drive.set(TRIGGER_PORT, 0);
+                            triggerHasFired = false;
+                            winchWiggled = false;
+                            afterFired = true;
+                            winchWiggleCount = 0;
+                        }
                     }
-                    
-                    //sleepBro(100);
-                    //wiggleWinch();
                 }
             }
             
@@ -458,9 +492,20 @@ public class RobotMain extends SimpleRobot {
         drive.set(WINCH_PORT, winchMove);
     }
     
-    
     private void wiggleWinch(double pow){
         drive.set(WINCH_PORT,pow);
+    }
+    
+    /**
+     * Guys we need to test this shit
+     */
+    private void pullWinchBack(){
+        if(!winchLin.get()){
+            drive.set(WINCH_PORT,-0.5);
+        }
+        else{
+            drive.set(WINCH_PORT,0);
+        }
     }
     
     /**private void sleepBro(int time){
