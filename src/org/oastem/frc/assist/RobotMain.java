@@ -86,6 +86,15 @@ public class RobotMain extends SimpleRobot {
     private Victor leftDrive1 = new Victor(6);
     private Victor leftDrive2 = new Victor(7);
     //*/
+    private long accelTime;
+    // acceleration per millisecond
+    public static final double ACCEL_FACTOR = 0.00033;
+    // Vf = Vo + at
+    private double leftDrive;
+    private double rightDrive;
+    private double currSpeedLeft;
+    private double currSpeedRight;
+    private double THRESHOLD = 0.0005;
     private DigitalInput fireLim = new DigitalInput(1);
     private DigitalInput winchLin = new DigitalInput(2);
     private long lastUpdate;
@@ -284,6 +293,10 @@ public class RobotMain extends SimpleRobot {
         int winchWiggleCount = 0;
         long triggerStart = 0L;
         long secondaryTriggerStart = 0L;
+        rightDrive = 0.0;
+        leftDrive = 0.0;
+        currSpeedRight = 0.0;
+        currSpeedLeft = 0.0;
          while(isOperatorControl() && isEnabled()) {
             double speed = left.getY() * joyScale;
             long currentTime = System.currentTimeMillis();
@@ -418,8 +431,18 @@ public class RobotMain extends SimpleRobot {
                         state = PULL;
                     }
                     break;
-                case PULL : pulling(currentTime, triggerStart); break;//
-                case LOOSEN : loosening(currentTime, triggerStart); break;//
+                case PULL : 
+                    if(pulling(currentTime, triggerStart)) {
+                    triggerStart = currentTime;
+                    state = LOOSEN;
+                }
+                    break;
+                case LOOSEN : 
+                    
+                    if(loosening(currentTime, triggerStart)){
+                        triggerStart = 0;
+                        state = READY;
+                    } break;
                 default : break; //nothing should be happening here
             }
             /**
@@ -580,7 +603,64 @@ public class RobotMain extends SimpleRobot {
     }
     
     private boolean pulling(long currTime, long trigStart){
+    if(currTime -trigStart < 4000L && winchLin.get()) {
+            wiggleWinch(0.5);
+            return false;
+    }
+    wiggleWinch(0);
+    return true;
+    }
+    
+    private boolean loosening(long currTime, long trigStart) {
+        if (currTime - trigStart < 400L) {
+            wiggleWinch(-0.1);
+            return false;
+        }
+        wiggleWinch(0);
+        return true;
+    }
+    
+    private void accelerate(String[] debug){
+        double leftMove = 0.0;
+        double rightMove = 0.0;
+        double zone = 0.04;
+
+        joyScale = scaleZ(left.getZ());
+
+        double x = left.getX() * -1;
+        double y = left.getY();
+
+        if (Math.abs(y) > zone) {
+            leftMove = y;
+            rightMove = y;
+        }
+
+        if (Math.abs(x) > zone) {
+            leftMove = correct(leftMove + x);
+            rightMove = correct(rightMove - x);
+        }
+
+        leftMove *= joyScale * -1;
+        rightMove *= joyScale * -1;
+        if(Math.abs(leftMove) > zone){
+            leftDrive = leftMove;
+        }
+        if(Math.abs(rightMove) > zone){
+            rightDrive = rightMove;
+        }
         
+        if
+        debug[3] = "Scale: " + joyScale;
+        debug[4] = "Left: " + leftMove +" Right: "+rightMove;
+    }
+    
+    private double accelerate(double currSpeed, long theTime, double commandSpeed){
+        if(Math.abs(currSpeed - commandSpeed) > THRESHOLD){
+            currSpeed = currSpeed + (ACCEL_FACTOR * theTime);
+            return currSpeed;
+        }
+        return commandSpeed;
+        //
     }
     
     private void doingWinchStuff(String[] debug){
