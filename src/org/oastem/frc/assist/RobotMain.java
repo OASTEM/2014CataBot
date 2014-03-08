@@ -651,6 +651,7 @@ public class RobotMain extends SimpleRobot {
         
         if
         debug[3] = "Scale: " + joyScale;
+        //what
         debug[4] = "Left: " + leftMove +" Right: "+rightMove;
     }
     
