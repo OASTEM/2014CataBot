@@ -95,6 +95,7 @@ public class RobotMain extends SimpleRobot {
     private double rightDrive;
     private double currSpeedLeft;
     private double currSpeedRight;
+    private long motorTime;
     private double THRESHOLD = 0.0005;
     private DigitalInput fireLim = new DigitalInput(1);
     private DigitalInput winchLin = new DigitalInput(2);
@@ -145,6 +146,7 @@ public class RobotMain extends SimpleRobot {
         Debug.log(1, 1, "Robot Initalized");
         state = START;
         lastUpdate = System.currentTimeMillis();
+        motorTime = 0L;
         
         drive.initializeDrive(LEFT_DRIVE_FRONT, LEFT_DRIVE_REAR, RIGHT_DRIVE_FRONT, RIGHT_DRIVE_REAR);
         drive.setSafety(false);
@@ -733,49 +735,12 @@ public class RobotMain extends SimpleRobot {
         return true;
     }
     
-    private void accelerate(String[] debug){
-        double leftMove = 0.0;
-        double rightMove = 0.0;
-        double zone = 0.04;
-
-        joyScale = scaleZ(left.getZ());
-
-        double x = left.getX() * -1;
-        double y = left.getY();
-
-        if (Math.abs(y) > zone) {
-            leftMove = y;
-            rightMove = y;
-        }
-
-        if (Math.abs(x) > zone) {
-            leftMove = correct(leftMove + x);
-            rightMove = correct(rightMove - x);
-        }
-
-        leftMove *= joyScale * -1;
-        rightMove *= joyScale * -1;
-        if(Math.abs(leftMove) > zone){
-            leftDrive = leftMove;
-        }
-        if(Math.abs(rightMove) > zone){
-            rightDrive = rightMove;
-        }
-        
-        if
-        debug[3] = "Scale: " + joyScale;
-        //what
-        //
-        debug[4] = "Left: " + leftMove +" Right: "+rightMove;
-    }
-    
     private double accelerate(double currSpeed, long theTime, double commandSpeed){
         if(Math.abs(currSpeed - commandSpeed) > THRESHOLD){
             currSpeed = currSpeed + (ACCEL_FACTOR * theTime);
             return currSpeed;
         }
         return commandSpeed;
-        //
     }
     
     private void doingWinchStuff(String[] debug){
@@ -817,7 +782,7 @@ public class RobotMain extends SimpleRobot {
         }
     }//*/
     
-     private void doArcadeDrive(String[] debug) {
+     private void doArcadeDrive(String[] debug, long time) {
         double leftMove = 0.0;
         double rightMove = 0.0;
         double zone = 0.04;
@@ -839,10 +804,14 @@ public class RobotMain extends SimpleRobot {
 
         leftMove *= joyScale * -1;
         rightMove *= joyScale * -1;
+        leftDrive = leftMove;
+        rightDrive = rightMove;
+        double lefty = accelerate(currSpeedLeft,time,leftDrive);
+        double righty = accelerate(currSpeedRight,time,rightDrive); //
         debug[3] = "Scale: " + joyScale;
         debug[4] = "Left: " + leftMove +" Right: "+rightMove;
 
-        drive.tankDrive(leftMove, rightMove);
+        drive.tankDrive(lefty, righty);
     }
      
      private double correct(double val) {
