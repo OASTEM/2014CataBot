@@ -615,7 +615,7 @@ public class RobotMain extends SimpleRobot {
         if (currTime - trigStart < 400L) {
             wiggleWinch(-0.1);
             return false;
-        }
+        }//
         wiggleWinch(0);
         return true;
     }
