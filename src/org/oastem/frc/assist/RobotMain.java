@@ -694,7 +694,7 @@ public class RobotMain extends SimpleRobot {
         leftDrive = leftMove;
         rightDrive = rightMove;
         double lefty = accelerate(currSpeedLeft,time,leftDrive);
-        double righty = accelerate(currSpeedRight,time,rightDrive);
+        double righty = accelerate(currSpeedRight,time,rightDrive); //
         debug[3] = "Scale: " + joyScale;
         debug[4] = "Left: " + leftMove +" Right: "+rightMove;
 
