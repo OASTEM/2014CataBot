@@ -14,13 +14,13 @@ import java.util.Hashtable;
  * @author KTOmega
  */
 public class DriveSystem {
-    private static DriveSystem instance;
-    private RobotDrive drive;
-    private Victor[] raw;
-    private boolean hasSecondary = false;
-    private RobotDrive drive2;
+    protected static DriveSystem instance;
+    protected RobotDrive drive;
+    protected Victor[] raw;
+    protected boolean hasSecondary = false;
+    protected RobotDrive drive2;
     
-    private DriveSystem() {
+    protected DriveSystem() {
         raw = new Victor[12];
     }
     

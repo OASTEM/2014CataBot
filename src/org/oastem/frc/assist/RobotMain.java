@@ -17,8 +17,7 @@ import edu.wpi.first.wpilibj.camera.AxisCamera;
 import edu.wpi.first.wpilibj.image.*;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.oastem.frc.Debug;
-import org.oastem.frc.control.DriveSystem;
-import org.oastem.frc.control.VexSpike;
+import org.oastem.frc.control.*;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -52,7 +51,7 @@ public class RobotMain extends SimpleRobot {
     private static final double TRIGGER_SPEED_UP = -0.75;
     private static final double TRIGGER_SPEED_DOWN = 0.25;
     
-    private DriveSystem drive = DriveSystem.getInstance();
+    private DriveSystemAccel drive = DriveSystemAccel.getInstance();
     
     private VexSpike intake;
     private VexSpike winch;
@@ -735,14 +734,6 @@ public class RobotMain extends SimpleRobot {
         return true;
     }
     
-    private double accelerate(double currSpeed, long theTime, double commandSpeed){
-        if(Math.abs(currSpeed - commandSpeed) > THRESHOLD){
-            currSpeed = currSpeed + (ACCEL_FACTOR * theTime);
-            return currSpeed;
-        }
-        return commandSpeed;
-    }
-    
     private void doingWinchStuff(String[] debug){
         double y = right.getY();
         double winchMove = 0.0;
@@ -782,7 +773,7 @@ public class RobotMain extends SimpleRobot {
         }
     }//*/
     
-     private void doArcadeDrive(String[] debug, long time) {
+     private void doArcadeDrive(String[] debug, long timeDiff) {
         double leftMove = 0.0;
         double rightMove = 0.0;
         double zone = 0.04;
@@ -804,15 +795,18 @@ public class RobotMain extends SimpleRobot {
 
         leftMove *= joyScale * -1;
         rightMove *= joyScale * -1;
-        leftDrive = leftMove;
-        rightDrive = rightMove;
-        double lefty = accelerate(currSpeedLeft,time,leftDrive);
-        double righty = accelerate(currSpeedRight,time,rightDrive); //
+        //leftDrive = leftMove;
+        //rightDrive = rightMove;
+        //currSpeedLeft = accelerate(currSpeedLeft,leftDrive, timeDiff);
+        //currSpeedRight = accelerate(currSpeedRight,rightDrive, timeDiff); //
         debug[3] = "Scale: " + joyScale;
-        debug[4] = "Left: " + leftMove +" Right: "+rightMove;
-
-        drive.tankDrive(lefty, righty);
+        debug[4] = "Left: " + getDriveSpeed(LEFT_DRIVE_FRONT) +" Right: "+ getDriveSpeed(RIGHT_DRIVE_FRONT) ;
+        drive.tankDrive(leftMove, rightMove);
     }
+    
+    private double getDriveSpeed(int port){
+		drive.getAccelSpeed(port);
+	}
      
      private double correct(double val) {
         if (val > 1.0) {
