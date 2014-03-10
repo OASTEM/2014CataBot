@@ -7,7 +7,9 @@ import java.util.Hashtable;
 
 
 
-
+/**
+ * @author ThePotatoGuy
+ */
 public class DriveSystemAccel extends DriveSystem{
 	
 	private long currTime;

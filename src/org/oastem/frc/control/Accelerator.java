@@ -1,5 +1,9 @@
 package org.oastem.frc.control;
 
+
+/**
+ * @author ThePotatoGuy
+ */
 public class Accelerator{
 	
 	private long currTime;

@@ -773,7 +773,7 @@ public class RobotMain extends SimpleRobot {
         }
     }//*/
     
-     private void doArcadeDrive(String[] debug, long timeDiff) {
+     private void doArcadeDrive(String[] debug) {
         double leftMove = 0.0;
         double rightMove = 0.0;
         double zone = 0.04;
