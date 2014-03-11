@@ -25,14 +25,16 @@ public class Accelerator{
 	}
 	
 	private double accelerate(double currSpeed, double commandSpeed, long time){
-        if(Math.abs(currSpeed - commandSpeed) > THRESHOLD && time > 50L){
-			if(commandSpeed > currSpeed){
-				currSpeed = currSpeed + ACCEL_FACTOR;
-			}
-			else if(commandSpeed < currSpeed){
-				currSpeed = currSpeed - ACCEL_FACTOR;
-			}
-			thisTime = currTime;
+        if(Math.abs(currSpeed - commandSpeed) > THRESHOLD){
+        	if(time > 40L){
+        		if(commandSpeed > currSpeed){
+        			currSpeed = currSpeed + ACCEL_FACTOR;
+        		}
+        		else if(commandSpeed < currSpeed){
+        			currSpeed = currSpeed - ACCEL_FACTOR;
+        		}
+        		thisTime = currTime;
+        	}
 			return currSpeed;
 		}
         return commandSpeed;
