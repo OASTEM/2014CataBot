@@ -9,6 +9,8 @@ public class Accelerator{
 	private long currTime;
 	private long thisTime;
 	private double speed;
+	public static final double THRESHOLD = 0.005;
+	public static final double ACCEL_FACTOR = 0.02;
 	
 	public Accelerator(){
 		currTime = System.currentTimeMillis();
@@ -30,7 +32,7 @@ public class Accelerator{
 			else if(commandSpeed < currSpeed){
 				currSpeed = currSpeed - ACCEL_FACTOR;
 			}
-			theTime = currTime;
+			thisTime = currTime;
 			return currSpeed;
 		}
         return commandSpeed;
