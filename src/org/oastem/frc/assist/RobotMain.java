@@ -561,18 +561,39 @@ public class RobotMain extends SimpleRobot {
 		
 		for(int i = 0; i < 4; i++) {
 			for(int j = 0; j < 2; j++) {		
-				if((massCenter[i][j] <= massCenter[0][0] && massCenter[i][j] <= massCenter[1][0] && massCenter[i][j] <= massCenter[2][0] && massCenter[i][j] <= massCenter[3][0] && massCenter[i][j] <= massCenter[0][1] && massCenter[i][j] <= massCenter[1][1] && massCenter[i][j] <= massCenter[2][1] && massCenter[i][j] <= massCenter[3][1]) {
-		massCenter[i][j] = [0][0];			
-		//bottom left
-	} else if (massCenter[i][j] >= massCenter[0][0] && massCenter[i][j] >= massCenter[1][0] && massCenter[i][j] >= massCenter[2][0] && massCenter[i][j] >= massCenter[3][0] && massCenter[i][j] >= massCenter[0][1] && massCenter[i][j] >= massCenter[1][1] && massCenter[i][j] >= massCenter[2][1] && massCenter[i][j] >= massCenter[3][1])
-massCenter[i][j] = [0][0];
-//top right
-	} else if (massCenter[i][j] >= massCenter[0][0] && massCenter[i][j] >= massCenter[1][0] && massCenter[i][j] >= massCenter[2][0] && massCenter[i][j] >= massCenter[3][0]) {
-//bottom right
-else {
-//top left
-}
-}
+				if(massCenter[i][j] <= massCenter[0][0] && 
+					massCenter[i][j] <= massCenter[1][0] &&
+					massCenter[i][j] <= massCenter[2][0] &&
+					massCenter[i][j] <= massCenter[3][0] &&
+					massCenter[i][j] <= massCenter[0][1] &&
+					massCenter[i][j] <= massCenter[1][1] &&
+					massCenter[i][j] <= massCenter[2][1] &&
+					massCenter[i][j] <= massCenter[3][1]) {
+						massCenter[i][j] = [0][0];			
+						//bottom left
+				}
+				else if (massCenter[i][j] >= massCenter[0][0] &&
+					massCenter[i][j] >= massCenter[1][0] &&
+					massCenter[i][j] >= massCenter[2][0] &&
+					massCenter[i][j] >= massCenter[3][0] &&
+					massCenter[i][j] >= massCenter[0][1] &&
+					massCenter[i][j] >= massCenter[1][1] &&
+					massCenter[i][j] >= massCenter[2][1] &&
+					massCenter[i][j] >= massCenter[3][1]) {
+						massCenter[i][j] = [0][0];
+						//top right
+				}
+				else if (massCenter[i][j] >= massCenter[0][0] &&
+					massCenter[i][j] >= massCenter[1][0] &&
+					massCenter[i][j] >= massCenter[2][0] &&
+					massCenter[i][j] >= massCenter[3][0]) {
+						//bottom right
+				}
+				else {
+						//top left
+				}
+			}
+		}
 
     private void autoStates(long currTime){
 		switch(state){
