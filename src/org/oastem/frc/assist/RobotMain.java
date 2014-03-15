@@ -76,9 +76,24 @@ public class RobotMain extends SimpleRobot {
         "this winch be tripping",
         "much loose"
     };
-    
-    
+
     private int state;
+
+	//AUTO STATES
+	public static final int AUTO_START = 0;
+	public static final int LEFT = 1;
+	public static final int RIGHT = 2;
+	public static final int CENTER = 3;
+
+	public static final String[] AUTO_STATE_ARRAY = {
+		"Start",
+		"Left",
+		"Right",
+		"Center"
+	};
+    
+	private int autoState;    
+
     
     /**private Victor rightDrive1 = new Victor(4);
     private Victor rightDrive2 = new Victor(5);
@@ -130,6 +145,7 @@ public class RobotMain extends SimpleRobot {
     CriteriaCollection cc;      // the criteria for doing the particle filter operation
     
     // we are storing the centers of masses
+	public double[][] massCenters = new double[4][2];
     private double horzCenterMassX, horzCenterMassY, vertCenterMassX, vertCenterMassY;
     
     public class Scores {
@@ -172,109 +188,11 @@ public class RobotMain extends SimpleRobot {
      */
     public void autonomous() {
         debug[0] = "Autonomous mode";
-                while (isAutonomous() && isEnabled()) {
-            try {
-                /**
-                 * Do the image capture with the camera and apply the algorithm described above. This
-                 * sample will either get images from the camera or from an image file stored in the top
-                 * level directory in the flash memory on the cRIO. The file name in this case is "testImage.jpg"
-                 * 
-                 */
-                // 43:32
-                //ColorImage image = camera.getImage();     // comment if using stored images
-                ColorImage image;                           // next 2 lines read image from flash on cRIO
-                //image = camera.getImage();
-                image = new RGBImage("/testImage.jpg");		// get the sample image from the cRIO flash
-                BinaryImage thresholdImage = image.thresholdRGB(0, 50, 150, 255, 100, 200);
-                //BinaryImage thresholdImage = image.thresholdHSV(60, 100, 90, 255, 20, 255);   // keep only red objects
-                //thresholdImage.write("/threshold.bmp");
-                BinaryImage convexHullImage = thresholdImage.convexHull(false);          // fill in occluded rectangles
-                //convexHullImage.write("/convexHull.bmp");
-                BinaryImage filteredImage = convexHullImage.particleFilter(cc);           // filter out small particles
-                //filteredImage.write("/filteredImage.bmp");
-                //SmartDashboard.
-                
-                //iterate through each particle and score to see if it is a target
-                Scores scores[] = new Scores[filteredImage.getNumberParticles()];
-                for (int i = 0; i < scores.length; i++) {
-                    ParticleAnalysisReport report = filteredImage.getParticleAnalysisReport(i);
-                    scores[i] = new Scores();
-                    
-                    scores[i].rectangularity = scoreRectangularity(report);
-                    scores[i].aspectRatioOuter = scoreAspectRatio(filteredImage,report, i, true);
-                    scores[i].aspectRatioInner = scoreAspectRatio(filteredImage, report, i, false);
-                    scores[i].xEdge = scoreXEdge(thresholdImage, report);
-                    scores[i].yEdge = scoreYEdge(thresholdImage, report);
-                    
-                   
-                    if (scores[i].aspectRatioOuter > 1.0) {
-                        // Width > height, it's the horizontal goal
-                        horzCenterMassX = report.center_mass_x_normalized;
-                        horzCenterMassY = report.center_mass_y_normalized;
-                        System.out.println(i + ": HorizGoal cx: " + report.center_mass_x_normalized + " cy: "
-                                + report.center_mass_y_normalized);
-                        
-                    } else {
-                        // Height > width, it's the vertical goal
-                        vertCenterMassX = report.center_mass_x_normalized;
-                        vertCenterMassY = report.center_mass_y_normalized;
-                        System.out.println(i + ": VertGoal cx: " + report.center_mass_x_normalized + " cy: "
-                                + report.center_mass_y_normalized 
-                                + " h: " + (report.boundingRectHeight/(double)report.imageHeight));
-                        System.out.println(report.boundingRectHeight);
-                        //System.out.println( (347.5 * report.boundingRectHeight) / 92.0 );
-                    }
-                    
-                    // in discovering distance. ...
-                    // y = distance to target (to find)
-                    // x = sample distance (i.e. 10 meters)
-                    // h = sample height of target (corresponding to sample distance)
-                    // z = height of target
-                    // y = hz / x
-                    
-                    // h = 92 px
-                    // x = 347.5 cm
-                    // ----------------------------------
-                    // DISTANCE til full view of vision targets: 78.9 inches == 200 cm!!! 2 m
-                    // x = FOV/140 //credits to Spring
-                    // x = distance from wall to robot
-                    // FOV = bounding rect width --> width from edge of horzgoal to other edge 
-                    // TEST THIS
-                    // Put robot 2 meters from the vision targets and measure the pixel width of the image
-                    // (or boundingRectWidth) (from the edges of the goals
-                    
-                    
-
-                    /*if(scoreCompare(scores[i], false))
-                    {
-                        System.out.println("particle: " + i + "is a High Goal  centerX: " + report.center_mass_x_normalized + "centerY: " + report.center_mass_y_normalized);
-			System.out.println("Distance: " + computeDistance(thresholdImage, report, i, false));
-                    } else if (scoreCompare(scores[i], true)) {
-			System.out.println("particle: " + i + "is a Middle Goal  centerX: " + report.center_mass_x_normalized + "centerY: " + report.center_mass_y_normalized);
-			System.out.println("Distance: " + computeDistance(thresholdImage, report, i, true));
-                    } else {
-                        System.out.println("particle: " + i + "is not a goal  centerX: " + report.center_mass_x_normalized + "centerY: " + report.center_mass_y_normalized);
-                    }*/
-			//System.out.println("rect: " + scores[i].rectangularity + "ARinner: " + scores[i].aspectRatioInner);
-			//System.out.println("ARouter: " + scores[i].aspectRatioOuter + "xEdge: " + scores[i].xEdge + "yEdge: " + scores[i].yEdge);	
-                    }
-                System.out.println(isRightOrLeft(vertCenterMassX, vertCenterMassY, horzCenterMassX, horzCenterMassY)+"");
-
-                /**
-                 * all images in Java must be freed after they are used since they are allocated out
-                 * of C data structures. Not calling free() will cause the memory to accumulate over
-                 * each pass of this loop.
-                 */
-                filteredImage.free();
-                convexHullImage.free();
-                thresholdImage.free();
-                image.free();
-                System.out.println("-------");
-//            } catch (AxisCameraException ex) {        // this is needed if the camera.getImage() is called
-//                ex.printStackTrace();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+		autoState = AUTO_START; 
+        while (isAutonomous() && isEnabled()) {
+			switch(autoState){
+				case AUTO_START : 
+				imageProcessing();    
             lastUpdate = System.currentTimeMillis();
         }
         Debug.log(debug);
@@ -566,6 +484,8 @@ public class RobotMain extends SimpleRobot {
                         // Width > height, it's the horizontal goal
                         horzCenterMassX = report.center_mass_x_normalized;
                         horzCenterMassY = report.center_mass_y_normalized;
+						massCenters[i][0] = horzCenterMassX;
+						massCenters[i][1] = horzCenterMassY;
                         System.out.println(i + ": HorizGoal cx: " + report.center_mass_x_normalized + " cy: "
                                 + report.center_mass_y_normalized);
                         
@@ -573,6 +493,8 @@ public class RobotMain extends SimpleRobot {
                         // Height > width, it's the vertical goal
                         vertCenterMassX = report.center_mass_x_normalized;
                         vertCenterMassY = report.center_mass_y_normalized;
+						massCenters[i][0] = horzCenterMassX;
+						massCenters[i][1] = horzCenterMassY;
                         System.out.println(i + ": VertGoal cx: " + report.center_mass_x_normalized + " cy: "
                                 + report.center_mass_y_normalized 
                                 + " h: " + (report.boundingRectHeight/(double)report.imageHeight));
@@ -613,6 +535,8 @@ public class RobotMain extends SimpleRobot {
 			//System.out.println("rect: " + scores[i].rectangularity + "ARinner: " + scores[i].aspectRatioInner);
 			//System.out.println("ARouter: " + scores[i].aspectRatioOuter + "xEdge: " + scores[i].xEdge + "yEdge: " + scores[i].yEdge);	
                     }
+
+			public void checkRegion(
                 System.out.println(isRightOrLeft(vertCenterMassX, vertCenterMassY, horzCenterMassX, horzCenterMassY)+"");
 
                 /**
@@ -633,6 +557,23 @@ public class RobotMain extends SimpleRobot {
             lastUpdate = System.currentTimeMillis();
     }
     
+	public String checkGoal () {
+		
+		for(int i = 0; i < 4; i++) {
+			for(int j = 0; j < 2; j++) {		
+				if((massCenter[i][j] <= massCenter[0][0] && massCenter[i][j] <= massCenter[1][0] && massCenter[i][j] <= massCenter[2][0] && massCenter[i][j] <= massCenter[3][0] && massCenter[i][j] <= massCenter[0][1] && massCenter[i][j] <= massCenter[1][1] && massCenter[i][j] <= massCenter[2][1] && massCenter[i][j] <= massCenter[3][1]) {
+		massCenter[i][j] = [0][0];			
+		//bottom left
+	} else if (massCenter[i][j] >= massCenter[0][0] && massCenter[i][j] >= massCenter[1][0] && massCenter[i][j] >= massCenter[2][0] && massCenter[i][j] >= massCenter[3][0] && massCenter[i][j] >= massCenter[0][1] && massCenter[i][j] >= massCenter[1][1] && massCenter[i][j] >= massCenter[2][1] && massCenter[i][j] >= massCenter[3][1])
+massCenter[i][j] = [0][0];
+//top right
+	} else if (massCenter[i][j] >= massCenter[0][0] && massCenter[i][j] >= massCenter[1][0] && massCenter[i][j] >= massCenter[2][0] && massCenter[i][j] >= massCenter[3][0]) {
+//bottom right
+else {
+//top left
+}
+}
+
     private void autoStates(long currTime){
 		switch(state){
                 case RELEASE : 
@@ -803,6 +744,11 @@ public class RobotMain extends SimpleRobot {
         debug[4] = "Left: " + getDriveSpeed(LEFT_DRIVE_FRONT) +" Right: "+ getDriveSpeed(RIGHT_DRIVE_FRONT) ;
         drive.tankDrive(leftMove, rightMove);
     }
+
+	private void autoDrive (double a, double b, String [] debug) {
+        debug[4] = "Left: " + getDriveSpeed(LEFT_DRIVE_FRONT) +" Right: "+ getDriveSpeed(RIGHT_DRIVE_FRONT) ;
+        drive.tankDrive(a, b);
+	} 
     
     private double getDriveSpeed(int port){
 		drive.getAccelSpeed(port);
@@ -987,8 +933,8 @@ public class RobotMain extends SimpleRobot {
      */
     private boolean isRightOrLeft(double vertGoalX, double vertGoalY, double horzGoalX, double horzGoalY ){
         vertGoalY = -1 * vertGoalY;
-        horzGoalY = -1 * horzGoalY;
-        if(horzGoalX > vertGoalX){
+        horzGoalY = -1 * horzGoalY;        
+		if(horzGoalX > vertGoalX){
             return true;
         }
         else if(horzGoalX < vertGoalX) {
