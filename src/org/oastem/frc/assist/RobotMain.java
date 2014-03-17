@@ -272,16 +272,19 @@ public class RobotMain extends SimpleRobot {
                 }
                 if (triggerHasFired && currentTime - secondaryTriggerStart > 1000L) {
                     drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
-                    for (; fireLim.get();) {
-                        long theTime = System.currentTimeMillis();
-                        if (theTime - secondaryTriggerStart > 4000L) {
+                    
+                    if (fireLim.get() && currentTime - secondaryTriggerStart <= 4000L) {
+                        // Limit switch not engaged, but all is well
+                    } else {
+                        if (fireLim.get()) {
+                            // Limit switch not engaged, but time exceeded...
                             debug[2] = "WTFBBQ";
-                            break;
                         }
+                        
+                        drive.set(TRIGGER_PORT, 0);
+                        triggerHasFired = false;
+                        secondaryTriggerStart = 0L;
                     }
-                    drive.set(TRIGGER_PORT, 0);
-                    triggerHasFired = false;
-                    secondaryTriggerStart = 0L;
                 }
             }
 
@@ -298,7 +301,7 @@ public class RobotMain extends SimpleRobot {
                     break;
             }
             /**
-             * Rewrite this to a switch case
+             * TODO: Rewrite this to a switch case
              */
             if (left.getRawButton(TRIGGER_BUTTON) || triggerStart > 0L) {
                 if (triggerStart == 0L) {
@@ -335,37 +338,26 @@ public class RobotMain extends SimpleRobot {
                         if (triggerHasFired && currentTime - triggerStart > 1000L) {
                             drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
                             winch.deactivate();
-                            for (; fireLim.get();) {
-                                long theTime = System.currentTimeMillis();
-                                if (theTime - triggerStart > 4000L) {
+                            
+                            if (fireLim.get() && currentTime - triggerStart <= 4000L) {
+                                // Limit switch not engaged, but all is well
+                            } else {
+                                if (fireLim.get()) {
+                                    // Limit switch not engaged, but time exceeded...
                                     debug[2] = "WTFBBQ";
-                                    break;
                                 }
+
+                                drive.set(TRIGGER_PORT, 0);
+                                triggerHasFired = false;
+                                winchWiggled = false;
+                                afterFired = true;
+                                winchWiggleCount = 0;
                             }
-                            drive.set(TRIGGER_PORT, 0);
-                            triggerHasFired = false;
-                            winchWiggled = false;
-                            afterFired = true;
-                            winchWiggleCount = 0;
                         }
                     }
                 }
             }
-
-            /**
-             * if (left.getRawButton(TRIGGER_BUTTON) || triggerStart > 0L){ //
-             * Trigger the trigger if (triggerStart == 0L) triggerStart =
-             * currentTime; if (!triggerHasFired) drive.set(TRIGGER_PORT,
-             * TRIGGER_SPEED_UP); if (currentTime - triggerStart > 600L &&
-             * !triggerHasFired) { drive.set(TRIGGER_PORT, 0); triggerHasFired =
-             * true; triggerStart = currentTime; } if (triggerHasFired &&
-             * currentTime - triggerStart > 1000L) { drive.set(TRIGGER_PORT,
-             * TRIGGER_SPEED_DOWN); for (; fireLim.get();) { long theTime =
-             * System.currentTimeMillis(); if (theTime - triggerStart > 4000L) {
-             * debug[2] = "WTFBBQ"; break; } } drive.set(TRIGGER_PORT, 0);
-             * triggerHasFired = false; triggerStart = 0L; } }
-            //
-             */
+            
             if (left.getRawButton(TRIGGER_BUTTON_UP)) {
                 // Window motor positive
                 drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
