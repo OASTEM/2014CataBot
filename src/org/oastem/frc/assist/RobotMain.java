@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import org.oastem.frc.Debug;
 import org.oastem.frc.control.*;
 import org.oastem.frc.imaging.*;
+import com.sun.squawk.util.MathUtils;
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -387,8 +388,8 @@ public class RobotMain extends SimpleRobot {
             // 43:32
             //ColorImage image = camera.getImage();     // comment if using stored images
             ColorImage image;                           // next 2 lines read image from flash on cRIO
-            //image = camera.getImage();
-            image = new RGBImage("/testImage.jpg");		// get the sample image from the cRIO flash
+            image = camera.getImage();
+            //image = new RGBImage("/testImage.jpg");		// get the sample image from the cRIO flash
             BinaryImage thresholdImage = image.thresholdRGB(0, 50, 150, 255, 100, 200);
             //BinaryImage thresholdImage = image.thresholdHSV(60, 100, 90, 255, 20, 255);   // keep only red objects
             //thresholdImage.write("/threshold.bmp");
@@ -424,6 +425,7 @@ public class RobotMain extends SimpleRobot {
                     System.out.println(i + ": VertGoal cx: " + report.center_mass_x_normalized + " cy: "
                             + report.center_mass_y_normalized
                             + " h: " + (report.boundingRectHeight / (double) report.imageHeight));
+                    double dist = 121336.197 / ( MathUtils.pow(report.boundingRectHeight, 1.172) );
                     System.out.println(report.boundingRectHeight);
                     //System.out.println( (347.5 * report.boundingRectHeight) / 92.0 );
                 }
