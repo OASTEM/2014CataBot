@@ -112,7 +112,8 @@ public class RobotMain extends SimpleRobot {
     AxisCamera camera;          // the axis camera object (connected to the switch)
     CriteriaCollection cc;      // the criteria for doing the particle filter operation
     // we are storing the centers of masses
-    public double[][] massCenters = new double[4][2];
+    public Point[] massCenters = null;
+    
     private double horzCenterMassX, horzCenterMassY, vertCenterMassX, vertCenterMassY;
 
     protected void robotInit() {
@@ -242,7 +243,7 @@ public class RobotMain extends SimpleRobot {
             if (left.getRawButton(INTAKE_BUTTON)) {
                 intake.goForward();
                 intakePressed = true;
-            } else if (!(left.getRawButton(INTAKE_BUTTON)) && intakePressed) {
+            } else if (!left.getRawButton(INTAKE_BUTTON) && intakePressed) {
                 intake.deactivate();
                 intakePressed = false;
             }
@@ -251,9 +252,7 @@ public class RobotMain extends SimpleRobot {
             if (left.getRawButton(OUTTAKE_BUTTON)) {
                 intake.goBackward();
                 outtakePressed = true;
-            }
-
-            if (!(left.getRawButton(OUTTAKE_BUTTON)) && outtakePressed) {
+            } else if (!left.getRawButton(OUTTAKE_BUTTON) && outtakePressed) {
                 intake.deactivate();
                 outtakePressed = false;
             }
@@ -300,6 +299,7 @@ public class RobotMain extends SimpleRobot {
                     autoStates(currentTime);
                     break;
             }
+            
             /**
              * TODO: Rewrite this to a switch case
              */
@@ -398,10 +398,10 @@ public class RobotMain extends SimpleRobot {
             //SmartDashboard.
 
             //iterate through each particle and score to see if it is a target
-            Scores scores[] = new Scores[filteredImage.getNumberParticles()];
+            Point scores[] = new Point[filteredImage.getNumberParticles()];
             for (int i = 0; i < scores.length; i++) {
                 ParticleAnalysisReport report = filteredImage.getParticleAnalysisReport(i);
-                scores[i] = new Scores();
+                scores[i] = new Point(i, horzCenterMassX, horzCenterMassY);
 
                 scores[i].rectangularity = ImagingUtils.scoreRectangularity(report);
                 scores[i].aspectRatioOuter = ImagingUtils.scoreAspectRatio(filteredImage, report, i, true);
@@ -409,13 +409,10 @@ public class RobotMain extends SimpleRobot {
                 scores[i].xEdge = ImagingUtils.scoreXEdge(thresholdImage, report);
                 scores[i].yEdge = ImagingUtils.scoreYEdge(thresholdImage, report);
 
-
                 if (scores[i].aspectRatioOuter > 1.0) {
                     // Width > height, it's the horizontal goal
                     horzCenterMassX = report.center_mass_x_normalized;
                     horzCenterMassY = report.center_mass_y_normalized;
-                    massCenters[i][0] = horzCenterMassX;
-                    massCenters[i][1] = horzCenterMassY;
                     System.out.println(i + ": HorizGoal cx: " + report.center_mass_x_normalized + " cy: "
                             + report.center_mass_y_normalized);
 
@@ -423,14 +420,20 @@ public class RobotMain extends SimpleRobot {
                     // Height > width, it's the vertical goal
                     vertCenterMassX = report.center_mass_x_normalized;
                     vertCenterMassY = report.center_mass_y_normalized;
-                    massCenters[i][0] = horzCenterMassX;
-                    massCenters[i][1] = horzCenterMassY;
                     System.out.println(i + ": VertGoal cx: " + report.center_mass_x_normalized + " cy: "
                             + report.center_mass_y_normalized
                             + " h: " + (report.boundingRectHeight / (double) report.imageHeight));
                     System.out.println(report.boundingRectHeight);
                     //System.out.println( (347.5 * report.boundingRectHeight) / 92.0 );
                 }
+                
+                massCenters = scores;
+                
+                // The following code will only store the initial readings.
+                /*if (massCenters == null) {
+                    // We'll only take in the initial reading.
+                    massCenters = scores;
+                }//*/
 
                 // in discovering distance. ...
                 // y = distance to target (to find)

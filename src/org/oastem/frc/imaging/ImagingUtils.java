@@ -13,10 +13,11 @@ import org.oastem.frc.assist.RobotMain;
 
 /**
  * Moving all that template NI Vision junk into this new class.
- * 
+ *
  * @author KTOmega
  */
 public class ImagingUtils {
+
     private static final int XMAXSIZE = 24;
     private static final int XMINSIZE = 24;
     private static final int YMAXSIZE = 24;
@@ -34,8 +35,10 @@ public class ImagingUtils {
     private static final int X_IMAGE_RES = 320;          //X Image resolution in pixels, should be 160, 320 or 640
     private static final double VIEW_ANGLE = 43.5;       //Axis 206 camera
     //final double VIEW_ANGLE = 48;       //Axis M1011 camera
-    
-    
+    public static final double HORIZONTAL_ASPECT = 43.0 / 32;
+    public static final double VERTICAL_ASPECT = 32.0 / 43;
+    public static final double ASPECT_RANGE = 0.5;
+
     /**
      * Computes the estimated distance to a target using the height of the
      * particle in the image. For more information and graphics showing the math
@@ -107,7 +110,7 @@ public class ImagingUtils {
      *
      * @return True if the particle meets all limits, false otherwise
      */
-    public static boolean scoreCompare(Scores scores, boolean outer) {
+    public static boolean scoreCompare(Point scores, boolean outer) {
         boolean isTarget = true;
 
         isTarget &= scores.rectangularity > RECTANGULARITY_LIMIT;
@@ -220,6 +223,76 @@ public class ImagingUtils {
         } else {
             System.out.println("lol");
             return false;
+        }
+    }
+
+    /**
+     * Find the corresponding horiz/vert goal for the passed goal (point), with
+     * aspect ratio aspect. Returns the index of the corresponding point.
+     */
+    public static int findCorrespondingGoal(Point[] points, int point, double aspect) {
+        Point thePoint = points[point];
+        double correspondingAspect = aspect == HORIZONTAL_ASPECT
+                ? VERTICAL_ASPECT : HORIZONTAL_ASPECT;
+
+        int leastIndex = -1;
+        double leastDistance = Double.MAX_VALUE;
+        for (int i = 0; i < points.length; i++) {
+            if (i == point) {
+                continue;
+            }
+            Point curGoal = points[i];
+            if (curGoal.isMarked()) {
+                continue;
+            }
+            double distance = Point.calculateDistance(curGoal, thePoint);
+
+            if (curGoal.hasAspect(correspondingAspect, ASPECT_RANGE)
+                    && distance < leastDistance) {
+                leastIndex = i;
+                leastDistance = distance;
+            }
+        }
+
+        if (leastIndex != -1) {
+            points[leastIndex].setMarker(point);
+        }
+
+        return leastIndex;
+    }
+
+    public static void determineGoals(Point[] points) {
+        for (int i = 0; i < points.length; i++) {
+            Point curGoal = points[i];
+            double aspect = curGoal.getAspectRatio();
+            boolean isHoriz = curGoal.hasAspect(HORIZONTAL_ASPECT, ASPECT_RANGE);
+
+            int correspIndex = ImagingUtils.findCorrespondingGoal(points, i,
+                    isHoriz ? HORIZONTAL_ASPECT : VERTICAL_ASPECT);
+
+            System.out.print(curGoal + " (" + (isHoriz ? "Horiz" : "Vert") + ") => ");
+            if (correspIndex != -1) {
+                Point correspondingGoal = points[correspIndex];
+                System.out.println(correspondingGoal + " ("
+                        + (correspondingGoal.hasAspect(HORIZONTAL_ASPECT, ASPECT_RANGE)
+                        ? "Horiz" : "Vert") + ")");
+
+                if (isHoriz) {
+                    if (correspondingGoal.getX() > curGoal.getX()) {
+                        System.out.println("We're on the left");
+                    } else {
+                        System.out.println("We're on the right");
+                    }
+                } else {
+                    if (correspondingGoal.getX() > curGoal.getX()) {
+                        System.out.println("We're on the right");
+                    } else {
+                        System.out.println("We're on the left");
+                    }
+                }
+            } else {
+                System.out.println("Cannot find corresponding goal :( nawt hawt");
+            }
         }
     }
 }
