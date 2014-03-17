@@ -72,6 +72,10 @@ public class Point {
         this.orientation = newOr;
     }
     
+    public void setSide(int newSide) {
+        this.side = newSide;
+    }
+    
     public int getLabel() { return this.label; }
     public void setLabel(int newLabel) { this.label = newLabel; }
     

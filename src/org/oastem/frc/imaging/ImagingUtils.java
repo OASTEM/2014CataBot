@@ -266,28 +266,39 @@ public class ImagingUtils {
             Point curGoal = points[i];
             double aspect = curGoal.getAspectRatio();
             boolean isHoriz = curGoal.hasAspect(HORIZONTAL_ASPECT, ASPECT_RANGE);
+            
+            curGoal.setOrientation(isHoriz ? Point.HORIZONTAL : Point.VERTICAL);
 
             int correspIndex = ImagingUtils.findCorrespondingGoal(points, i,
                     isHoriz ? HORIZONTAL_ASPECT : VERTICAL_ASPECT);
 
             System.out.print(curGoal + " (" + (isHoriz ? "Horiz" : "Vert") + ") => ");
             if (correspIndex != -1) {
-                Point correspondingGoal = points[correspIndex];
-                System.out.println(correspondingGoal + " ("
-                        + (correspondingGoal.hasAspect(HORIZONTAL_ASPECT, ASPECT_RANGE)
+                Point correspGoal = points[correspIndex];
+                System.out.println(correspGoal + " ("
+                        + (correspGoal.hasAspect(HORIZONTAL_ASPECT, ASPECT_RANGE)
                         ? "Horiz" : "Vert") + ")");
 
+                // TODO: Check hotness
                 if (isHoriz) {
-                    if (correspondingGoal.getX() > curGoal.getX()) {
+                    if (correspGoal.getX() > curGoal.getX()) {
                         System.out.println("We're on the left");
+                        curGoal.setSide(Point.LEFT);
+                        correspGoal.setSide(Point.LEFT);
                     } else {
                         System.out.println("We're on the right");
+                        curGoal.setSide(Point.RIGHT);
+                        correspGoal.setSide(Point.RIGHT);
                     }
                 } else {
-                    if (correspondingGoal.getX() > curGoal.getX()) {
+                    if (correspGoal.getX() > curGoal.getX()) {
                         System.out.println("We're on the right");
+                        curGoal.setSide(Point.RIGHT);
+                        correspGoal.setSide(Point.RIGHT);
                     } else {
                         System.out.println("We're on the left");
+                        curGoal.setSide(Point.LEFT);
+                        correspGoal.setSide(Point.LEFT);
                     }
                 }
             } else {
