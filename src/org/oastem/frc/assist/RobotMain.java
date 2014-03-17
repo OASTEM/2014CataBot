@@ -561,7 +561,7 @@ public class RobotMain extends SimpleRobot {
     private boolean resetting(long currTime, long trigStart) {
         winch.deactivate();
         if (releaseGear(currTime, trigStart)) {
-            if (!fireLim.get() && currTime - trigStart < 4000L) {
+            if (!fireLim.get() && currTime - trigStart < 3000L) {    //reference
                 drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
                 return false;
             }
@@ -572,7 +572,7 @@ public class RobotMain extends SimpleRobot {
     }
 
     private boolean pulling(long currTime, long trigStart) {
-        if (currTime - trigStart < 4000L && winchLin.get()) {
+        if (currTime - trigStart < 3000L && !winchLin.get()) {
             wiggleWinch(0.5);
             return false;
         }
@@ -604,18 +604,6 @@ public class RobotMain extends SimpleRobot {
 
     private void wiggleWinch(double pow) {
         drive.set(WINCH_PORT, pow);
-    }
-
-    /**
-     * Guys we need to test this shit we would put this into the firing method
-     * (at the end)
-     */
-    private void pullWinchBack() {
-        if (!winchLin.get()) {
-            drive.set(WINCH_PORT, -0.5);
-        } else {
-            drive.set(WINCH_PORT, 0);
-        }
     }
 
     /**
@@ -659,7 +647,7 @@ public class RobotMain extends SimpleRobot {
         drive.tankDrive(a, b);
     }
 
-    private double getDriveSpeed(int port) {
+    private double getDriveSpeed(int port) {win
         return drive.getAccelSpeed(port);
     }
 
