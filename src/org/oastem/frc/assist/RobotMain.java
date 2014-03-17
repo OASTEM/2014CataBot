@@ -401,7 +401,7 @@ public class RobotMain extends SimpleRobot {
             Point scores[] = new Point[filteredImage.getNumberParticles()];
             for (int i = 0; i < scores.length; i++) {
                 ParticleAnalysisReport report = filteredImage.getParticleAnalysisReport(i);
-                scores[i] = new Point(i, horzCenterMassX, horzCenterMassY);
+                scores[i] = new Point(i, report.center_mass_x_normalized, report.center_mass_y_normalized);
 
                 scores[i].rectangularity = ImagingUtils.scoreRectangularity(report);
                 scores[i].aspectRatioOuter = ImagingUtils.scoreAspectRatio(filteredImage, report, i, true);
