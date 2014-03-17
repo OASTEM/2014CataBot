@@ -1,0 +1,47 @@
+The checkGoal method which we prob won't use anymore
+
+public void checkGoal() {
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 2; j++) {
+            if (massCenter[i][j] <= massCenter[0][0]
+                    && massCenter[i][j] <= massCenter[1][0]
+                    && massCenter[i][j] <= massCenter[2][0]
+                    && massCenter[i][j] <= massCenter[3][0]
+                    && massCenter[i][j] <= massCenter[0][1]
+                    && massCenter[i][j] <= massCenter[1][1]
+                    && massCenter[i][j] <= massCenter[2][1]
+                    && massCenter[i][j] <= massCenter[3][1]) {
+                massCenter[i][j] =   [0][0];			
+                                            //bottom left
+                            }
+                            else if (massCenter[i][j] >= massCenter[0][0]
+                    && massCenter[i][j] >= massCenter[1][0]
+                    && massCenter[i][j] >= massCenter[2][0]
+                    && massCenter[i][j] >= massCenter[3][0]
+                    && massCenter[i][j] >= massCenter[0][1]
+                    && massCenter[i][j] >= massCenter[1][1]
+                    && massCenter[i][j] >= massCenter[2][1]
+                    && massCenter[i][j] >= massCenter[3][1]) {
+                massCenter[i][j] =   [0][0];
+                                            //top right
+                            }
+                            else if (massCenter[i][j] >= massCenter[0][0]
+                    && massCenter[i][j] >= massCenter[1][0]
+                    && massCenter[i][j] >= massCenter[2][0]
+                    && massCenter[i][j] >= massCenter[3][0]) {
+                //bottom right
+            } else {
+                //top left
+            }
+        }
+    }
+}
+
+Old way to check firelim
+for (; fireLim.get();) {
+    long theTime = System.currentTimeMillis();
+    if (theTime - secondaryTriggerStart > 4000L) {
+        debug[2] = "WTFBBQ";
+        break;
+    }
+}
