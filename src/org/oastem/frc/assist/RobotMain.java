@@ -433,7 +433,7 @@ public class RobotMain extends SimpleRobot {
                     //System.out.println( (347.5 * report.boundingRectHeight) / 92.0 );
                 }
                 
-                massCenters = scores;
+                
                 
                 // The following code will only store the initial readings.
                 /*if (massCenters == null) {
@@ -474,9 +474,21 @@ public class RobotMain extends SimpleRobot {
                 //System.out.println("rect: " + scores[i].rectangularity + "ARinner: " + scores[i].aspectRatioInner);
                 //System.out.println("ARouter: " + scores[i].aspectRatioOuter + "xEdge: " + scores[i].xEdge + "yEdge: " + scores[i].yEdge);	
             }
+            
+            massCenters = scores;
+            ImagingUtils.determineGoals(scores);
+            
+            for (int i = 0; i < scores.length; i++) {
+                Point cur = scores[i];
+                String o = cur.getOrientation() == Point.HORIZONTAL ? "h" : "v";
+                String s = cur.getSide() == Point.INVALID ? "I" : 
+                        (cur.getSide() == Point.LEFT ? "L" : "R");
+                
+                System.out.println(i + " " + o + " " + s);
+            }
 
             //public void checkRegion(
-            System.out.println(ImagingUtils.isRightOrLeft(vertCenterMassX, vertCenterMassY, horzCenterMassX, horzCenterMassY) + "");
+            //System.out.println(ImagingUtils.isRightOrLeft(vertCenterMassX, vertCenterMassY, horzCenterMassX, horzCenterMassY) + "");
 
             /**
              * all images in Java must be freed after they are used since they
