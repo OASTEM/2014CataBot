@@ -132,6 +132,9 @@ public class RobotMain extends SimpleRobot {
         drive.addVictor(TRIGGER_PORT);
         drive.addVictor(WINCH_PORT);
         //trigger = new Victor(TRIGGER_VICTOR);
+        
+        camera = AxisCamera.getInstance("10.40.79.11");
+        
 
         cc = new CriteriaCollection();      // create the criteria for the particle filter
         cc.addCriteria(NIVision.MeasurementType.IMAQ_MT_AREA, 400, 65535, false);
@@ -390,7 +393,7 @@ public class RobotMain extends SimpleRobot {
             ColorImage image;                           // next 2 lines read image from flash on cRIO
             image = camera.getImage();
             //image = new RGBImage("/testImage.jpg");		// get the sample image from the cRIO flash
-            BinaryImage thresholdImage = image.thresholdRGB(0, 50, 150, 255, 100, 200);
+            BinaryImage thresholdImage = image.thresholdRGB(0, 50, 150, 255, 0, 100);
             //BinaryImage thresholdImage = image.thresholdHSV(60, 100, 90, 255, 20, 255);   // keep only red objects
             //thresholdImage.write("/threshold.bmp");
             BinaryImage convexHullImage = thresholdImage.convexHull(false);          // fill in occluded rectangles
@@ -425,8 +428,8 @@ public class RobotMain extends SimpleRobot {
                     System.out.println(i + ": VertGoal cx: " + report.center_mass_x_normalized + " cy: "
                             + report.center_mass_y_normalized
                             + " h: " + (report.boundingRectHeight / (double) report.imageHeight));
-                    double dist = 121336.197 / ( MathUtils.pow(report.boundingRectHeight, 1.172) );
-                    System.out.println(report.boundingRectHeight);
+                    double dist = 129166.84601965 * ( MathUtils.pow(report.boundingRectHeight, -1.172464652462));
+                    System.out.println(report.boundingRectHeight + ":"+dist);
                     //System.out.println( (347.5 * report.boundingRectHeight) / 92.0 );
                 }
                 
