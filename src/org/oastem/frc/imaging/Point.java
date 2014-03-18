@@ -25,15 +25,18 @@ public class Point {
     public int label = 0;
     public int marked = -1;
     
+    public boolean hot = false;
+    
     // Oh dear, oh my.
     // The things I do to make code look nice.
-    public static int LEFT = 0;
-    public static int RIGHT = 1;
-    public static int HORIZONTAL = 0;
-    public static int VERTICAL = 1;
+    public static final int INVALID = -1;
+    public static final int LEFT = 0;
+    public static final int RIGHT = 1;
+    public static final int HORIZONTAL = 0;
+    public static final int VERTICAL = 1;
     
     // 0 => left, 1 => right
-    private int side = LEFT;
+    private int side = INVALID;
     
     // 0 => horizontal, 1 => vertical
     private int orientation = HORIZONTAL;
@@ -50,6 +53,9 @@ public class Point {
     
     public double getX() { return this.x; }
     public double getY() { return this.y; }
+    
+    public int getOrientation() { return this.orientation; }
+    public int getSide() { return this.side; }
     
     public boolean isLeft() {
         return side == 0;
@@ -82,6 +88,9 @@ public class Point {
     public boolean isMarked() { return this.marked != -1; }
     public int getMarker() { return this.marked; }
     public void setMarker(int mark) { this.marked = mark; }
+    
+    public boolean isHot() { return hot; }
+    public void setHot(boolean orNot) { this.hot = orNot; }
     
     public static double calculateDistance(Point p1, Point p2) {
         return Math.sqrt(MathUtils.pow(p2.getX() - p1.getX(), 2) + MathUtils.pow(p2.getY() - p1.getY(), 2));

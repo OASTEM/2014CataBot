@@ -262,6 +262,8 @@ public class ImagingUtils {
     }
 
     public static void determineGoals(Point[] points) {
+        boolean markedLeft = false;
+        boolean markedRight = false;
         for (int i = 0; i < points.length; i++) {
             Point curGoal = points[i];
             double aspect = curGoal.getAspectRatio();
@@ -275,34 +277,49 @@ public class ImagingUtils {
             System.out.print(curGoal + " (" + (isHoriz ? "Horiz" : "Vert") + ") => ");
             if (correspIndex != -1) {
                 Point correspGoal = points[correspIndex];
+                
+                if (isHoriz) {
+                    correspGoal.setHot(true);
+                    curGoal.setHot(true);
+                }
+                
                 System.out.println(correspGoal + " ("
                         + (correspGoal.hasAspect(HORIZONTAL_ASPECT, ASPECT_RANGE)
                         ? "Horiz" : "Vert") + ")");
 
-                // TODO: Check hotness
                 if (isHoriz) {
                     if (correspGoal.getX() > curGoal.getX()) {
-                        System.out.println("We're on the left");
                         curGoal.setSide(Point.LEFT);
                         correspGoal.setSide(Point.LEFT);
+                        markedLeft = true;
                     } else {
-                        System.out.println("We're on the right");
                         curGoal.setSide(Point.RIGHT);
                         correspGoal.setSide(Point.RIGHT);
+                        markedRight = true;
                     }
                 } else {
                     if (correspGoal.getX() > curGoal.getX()) {
-                        System.out.println("We're on the right");
                         curGoal.setSide(Point.RIGHT);
                         correspGoal.setSide(Point.RIGHT);
+                        markedRight = true;
                     } else {
-                        System.out.println("We're on the left");
                         curGoal.setSide(Point.LEFT);
                         correspGoal.setSide(Point.LEFT);
+                        markedLeft = true;
                     }
                 }
             } else {
-                System.out.println("Cannot find corresponding goal :( nawt hawt");
+                //System.out.println("Cannot find corresponding goal :( nawt hawt");
+                curGoal.setHot(false);
+                if (markedLeft && markedRight) {
+                    // u w0t m8
+                    curGoal.setSide(Point.INVALID);
+                } else if (markedLeft) {
+                    // current goal must be orphaned right
+                    curGoal.setSide(Point.RIGHT);
+                } else if (markedRight) {
+                    curGoal.setSide(Point.LEFT);
+                }
             }
         }
     }
