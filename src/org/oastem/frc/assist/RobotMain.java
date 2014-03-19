@@ -112,6 +112,7 @@ public class RobotMain extends SimpleRobot {
     // we are storing the centers of masses
     public Point[] massCenters = null;
     private double horzCenterMassX, horzCenterMassY, vertCenterMassX, vertCenterMassY;
+    private int vertHeight;
 
     protected void robotInit() {
         Debug.clear();
@@ -119,6 +120,7 @@ public class RobotMain extends SimpleRobot {
         state = START;
         lastUpdate = System.currentTimeMillis();
         motorTime = 0L;
+        vertHeight = 0;
 
         drive.initializeDrive(LEFT_DRIVE_FRONT, LEFT_DRIVE_REAR, RIGHT_DRIVE_FRONT, RIGHT_DRIVE_REAR);
         drive.setSafety(false);
@@ -183,6 +185,11 @@ public class RobotMain extends SimpleRobot {
             joyScale2 = scaleZ(right.getZ());
             debug[1] = "Speed: " + speed;
             debug[2] = STATE_ARRAY[state];
+            if (canShoot(vertHeight)) {
+                debug[2] = debug[2] + " SHOOT NOW!";
+            } else {
+                debug[2] = STATE_ARRAY[state];
+            }
 
             if (left.getRawButton(WINCH_BUTTON_UP)) {
                 drive.set(WINCH_PORT, 1.0);
@@ -628,7 +635,7 @@ public class RobotMain extends SimpleRobot {
         }
         winchMove *= joyScale2 * -1;
 
-        debug[5] = "rScale: " + joyScale2 + " Winch: " + winchMove;
+        //debug[5] = "rScale: " + joyScale2 + " Winch: " + winchMove;
         drive.set(WINCH_PORT, winchMove);
     }
 
