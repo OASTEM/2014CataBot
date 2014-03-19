@@ -375,6 +375,29 @@ public class RobotMain extends SimpleRobot {
         }
     }
 
+	public double angleTurned (double oldX, double newX, double total) {
+		double oneDeg = total/80;
+		return (newX- oldX)/oneDeg;
+	}
+
+	public boolean canShoot (double pixelSize) {
+		if(pixelSize >= 101) {
+			return true;
+		}
+		return false;
+	}
+
+	public void autoMove () {
+		if(canShoot()) {
+			Drive.tankDrive(0,0);
+		}
+		Drive.tankDrive(0.5, 0.5);
+	}
+
+	public void endMove () {
+		
+	}
+
     private void imageProcessing() {
         try {
             // 43:32
