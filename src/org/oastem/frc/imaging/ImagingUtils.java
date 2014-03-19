@@ -4,6 +4,7 @@
  */
 package org.oastem.frc.imaging;
 
+import com.sun.squawk.util.MathUtils;
 import edu.wpi.first.wpilibj.image.BinaryImage;
 import edu.wpi.first.wpilibj.image.LinearAverages;
 import edu.wpi.first.wpilibj.image.NIVision;
@@ -224,6 +225,10 @@ public class ImagingUtils {
             System.out.println("lol");
             return false;
         }
+    }
+    
+    public static double getDistance(double pixelHeight) {
+        return 129166.84601965 * MathUtils.pow(pixelHeight, -1.172464652462);
     }
 
     /**

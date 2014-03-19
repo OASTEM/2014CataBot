@@ -204,20 +204,9 @@ public class RobotMain extends SimpleRobot {
                 winchMovePressed = false;
             }
 
-            if (left.getRawButton(EMERGENCY_STOP_BUTTON)) {
+            if (left.getRawButton(EMERGENCY_STOP_BUTTON) || right.getRawButton(9)) {
                 // HOLY CRAP STOP
                 drive.set(TRIGGER_PORT, 0);
-                drive.set(WINCH_PORT, 0);
-                winch.deactivate();
-                winchMovePressed = false;
-                triggerHasFired = false;
-                triggerStart = 0L;
-                debug[0] = "Soft Emergency Stop";
-                Debug.log(debug);
-                return;
-            }
-
-            if (right.getRawButton(9)) {
                 winch.deactivate();
                 drive.set(WINCH_PORT, 0);
                 triggerHasFired = false;
@@ -428,7 +417,7 @@ public class RobotMain extends SimpleRobot {
                     System.out.println(i + ": VertGoal cx: " + report.center_mass_x_normalized + " cy: "
                             + report.center_mass_y_normalized
                             + " h: " + (report.boundingRectHeight / (double) report.imageHeight));
-                    double dist = 129166.84601965 * ( MathUtils.pow(report.boundingRectHeight, -1.172464652462));
+                    double dist = ImagingUtils.getDistance(report.boundingRectHeight);
                     System.out.println(report.boundingRectHeight + ":"+dist);
                     //System.out.println( (347.5 * report.boundingRectHeight) / 92.0 );
                 }
@@ -480,7 +469,7 @@ public class RobotMain extends SimpleRobot {
             
             for (int i = 0; i < scores.length; i++) {
                 Point cur = scores[i];
-                String o = cur.getOrientation() == Point.HORIZONTAL ? "h" : "v";
+                String o = cur.getOrientation() == Point.HORIZONTAL ? "H" : "V";
                 String s = cur.getSide() == Point.INVALID ? "I" : 
                         (cur.getSide() == Point.LEFT ? "L" : "R");
                 
@@ -624,11 +613,6 @@ public class RobotMain extends SimpleRobot {
         drive.set(WINCH_PORT, pow);
     }
 
-    /**
-     * private void sleepBro(int time){ try{ Thread.sleep(time); }
-     * catch(Exception e){ // we should be going here }
-    }//
-     */
     private void doArcadeDrive(String[] debug) {
         double leftMove = 0.0;
         double rightMove = 0.0;
