@@ -112,6 +112,7 @@ public class RobotMain extends SimpleRobot {
     // we are storing the centers of masses
     public Point[] massCenters = null;
     private double horzCenterMassX, horzCenterMassY, vertCenterMassX, vertCenterMassY;
+    private int currentHotGoal = Point.INVALID;
 
     protected void robotInit() {
         Debug.clear();
@@ -152,7 +153,32 @@ public class RobotMain extends SimpleRobot {
             switch (autoState) {
                 case AUTO_START:
                     imageProcessing();
+                    //Determine left or right and set appropriate state
+                    if (currentHotGoal == Point.LEFT) {
+						autoState = LEFT;
+					} else if (currentHotGoal == Point.RIGHT) {
+						autoState = RIGHT;
+					} else System.out.println("Invalid side");
+					
                     lastUpdate = System.currentTimeMillis();
+                    break;
+                case LEFT:
+					//move until goal range
+					if (!canShoot()){
+						autoMove();
+					}
+					//wait till hot
+					else if (curGoal.isHot){
+						
+					}
+					//shoot
+					//move again
+					break;
+				case RIGHT:
+					//Right code
+					break;
+				default: System.out.println("This code doesn't work. (autonomous() switch thing).");
+				break;
             }
             Debug.log(debug);
         }
@@ -496,6 +522,10 @@ public class RobotMain extends SimpleRobot {
                         : (cur.getSide() == Point.LEFT ? "Left" : "Right");
 
                 String h = cur.isHot() ? "Hot" : "NotHot";
+                
+                if (cur.isHot()) {
+					currentHotGoal = cur.getSide();
+				}
 
                 System.out.println("Goal " + i + ": " + o + " " + s + " " + h);
             }
