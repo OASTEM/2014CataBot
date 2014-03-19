@@ -369,28 +369,24 @@ public class RobotMain extends SimpleRobot {
         }
     }
 
-	public double angleTurned (double oldX, double newX, double total) {
-		double oneDeg = total/80;
-		return (newX- oldX)/oneDeg;
-	}
+    public double angleTurned(double oldX, double newX, double total) {
+        double oneDeg = total / 80;
+        return (newX - oldX) / oneDeg;
+    }
 
-	public boolean canShoot (double pixelSize) {
-		if(pixelSize >= 101) {
-			return true;
-		}
-		return false;
-	}
+    public boolean canShoot(double pixelSize) {
+        return pixelSize >= 101;
+    }
 
-	public void autoMove () {
-		if(canShoot(0.0)) {
-			drive.tankDrive(0,0);
-		}
-		drive.tankDrive(0.5, 0.5);
-	}
+    public void autoMove() {
+        if (canShoot(0.0)) {
+            drive.tankDrive(0, 0);
+        }
+        drive.tankDrive(0.5, 0.5);
+    }
 
-	public void endMove () {
-		
-	}
+    public void endMove() {
+    }
 
     private void imageProcessing() {
         try {
@@ -445,8 +441,7 @@ public class RobotMain extends SimpleRobot {
                 // The following code will only store the initial readings.
                 /*
                  * if (massCenters == null) { // We'll only take in the initial
-                 * reading. massCenters = scores;
-                }//
+                 * reading. massCenters = scores; }//
                  */
 
                 // in discovering distance. ...
@@ -484,8 +479,7 @@ public class RobotMain extends SimpleRobot {
                  * computeDistance(thresholdImage, report, i, true)); } else {
                  * System.out.println("particle: " + i + "is not a goal centerX:
                  * " + report.center_mass_x_normalized + "centerY: " +
-                 * report.center_mass_y_normalized);
-                 }
+                 * report.center_mass_y_normalized); }
                  */
                 //System.out.println("rect: " + scores[i].rectangularity + "ARinner: " + scores[i].aspectRatioInner);
                 //System.out.println("ARouter: " + scores[i].aspectRatioOuter + "xEdge: " + scores[i].xEdge + "yEdge: " + scores[i].yEdge);	
@@ -502,7 +496,7 @@ public class RobotMain extends SimpleRobot {
                         : (cur.getSide() == Point.LEFT ? "Left" : "Right");
 
                 String h = cur.isHot() ? "Hot" : "NotHot";
-                
+
                 System.out.println("Goal " + i + ": " + o + " " + s + " " + h);
             }
 
