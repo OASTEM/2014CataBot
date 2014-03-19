@@ -35,9 +35,9 @@ public class ImagingUtils {
     private static final int X_IMAGE_RES = 320;          //X Image resolution in pixels, should be 160, 320 or 640
     private static final double VIEW_ANGLE = 43.5;       //Axis 206 camera
     //final double VIEW_ANGLE = 48;       //Axis M1011 camera
-    public static final double HORIZONTAL_ASPECT = 43.0 / 32;
-    public static final double VERTICAL_ASPECT = 32.0 / 43;
-    public static final double ASPECT_RANGE = 0.5;
+    public static final double HORIZONTAL_ASPECT = 23 / 4.5; // 4.8
+    public static final double VERTICAL_ASPECT = 4.0 / 32;
+    public static final double ASPECT_RANGE = 1.5;
 
     /**
      * Computes the estimated distance to a target using the height of the
@@ -256,6 +256,7 @@ public class ImagingUtils {
 
         if (leastIndex != -1) {
             points[leastIndex].setMarker(point);
+            thePoint.setMarker(leastIndex);
         }
 
         return leastIndex;
@@ -264,6 +265,8 @@ public class ImagingUtils {
     public static void determineGoals(Point[] points) {
         boolean markedLeft = false;
         boolean markedRight = false;
+        int leftCount = 0;
+        int rightCount = 0;
         for (int i = 0; i < points.length; i++) {
             Point curGoal = points[i];
             double aspect = curGoal.getAspectRatio();
@@ -274,7 +277,7 @@ public class ImagingUtils {
             int correspIndex = ImagingUtils.findCorrespondingGoal(points, i,
                     isHoriz ? HORIZONTAL_ASPECT : VERTICAL_ASPECT);
 
-            System.out.print(curGoal + " (" + (isHoriz ? "Horiz" : "Vert") + ") => ");
+            //System.out.print(curGoal + " (" + (isHoriz ? "Horiz" : "Vert") + ") => ");
             if (correspIndex != -1) {
                 Point correspGoal = points[correspIndex];
                 
@@ -283,42 +286,55 @@ public class ImagingUtils {
                     curGoal.setHot(true);
                 }
                 
-                System.out.println(correspGoal + " ("
+                /*System.out.println(correspGoal + " ("
                         + (correspGoal.hasAspect(HORIZONTAL_ASPECT, ASPECT_RANGE)
-                        ? "Horiz" : "Vert") + ")");
+                        ? "Horiz" : "Vert") + ")");*/
 
                 if (isHoriz) {
                     if (correspGoal.getX() > curGoal.getX()) {
                         curGoal.setSide(Point.LEFT);
                         correspGoal.setSide(Point.LEFT);
                         markedLeft = true;
+                        leftCount++;
                     } else {
                         curGoal.setSide(Point.RIGHT);
                         correspGoal.setSide(Point.RIGHT);
                         markedRight = true;
+                        rightCount++;
                     }
                 } else {
                     if (correspGoal.getX() > curGoal.getX()) {
                         curGoal.setSide(Point.RIGHT);
                         correspGoal.setSide(Point.RIGHT);
                         markedRight = true;
+                        rightCount++;
                     } else {
                         curGoal.setSide(Point.LEFT);
                         correspGoal.setSide(Point.LEFT);
                         markedLeft = true;
+                        leftCount++;
                     }
                 }
-            } else {
+            } else if (!curGoal.isHot()) {
                 //System.out.println("Cannot find corresponding goal :( nawt hawt");
                 curGoal.setHot(false);
-                if (markedLeft && markedRight) {
-                    // u w0t m8
-                    curGoal.setSide(Point.INVALID);
-                } else if (markedLeft) {
+                if (markedLeft) {
                     // current goal must be orphaned right
                     curGoal.setSide(Point.RIGHT);
                 } else if (markedRight) {
                     curGoal.setSide(Point.LEFT);
+                } else if (points.length == 2) {
+                    if (i == 0) {
+                        if (points[0].getX() > points[1].getX()) {
+                            curGoal.setSide(Point.RIGHT);
+                            points[1].setSide(Point.LEFT);
+                        } else {
+                            curGoal.setSide(Point.LEFT);
+                            points[1].setSide(Point.RIGHT);
+                        }
+                    }
+                } else {
+                    curGoal.setSide(Point.INVALID);
                 }
             }
         }

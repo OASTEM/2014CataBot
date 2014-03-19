@@ -39,7 +39,7 @@ public class Point {
     private int side = INVALID;
     
     // 0 => horizontal, 1 => vertical
-    private int orientation = HORIZONTAL;
+    private int orientation = INVALID;
     
     public Point(int label, double x, double y) {
         this(x, y);

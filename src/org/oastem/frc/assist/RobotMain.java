@@ -29,6 +29,7 @@ import com.sun.squawk.util.MathUtils;
  */
 public class RobotMain extends SimpleRobot {
     // Ports for Victor
+
     public static final int WINCH_PORT = 1;
     public static final int RIGHT_DRIVE_FRONT = 4;
     public static final int RIGHT_DRIVE_REAR = 5;
@@ -37,7 +38,6 @@ public class RobotMain extends SimpleRobot {
     public static final int INTAKE_SPIKE = 7;
     public static final int WINCH_SPIKE = 8;
     public static final int TRIGGER_PORT = 2;
-    
     // Buttons:
     public static final int INTAKE_BUTTON = 6;
     public static final int TRIGGER_BUTTON = 1;
@@ -54,7 +54,6 @@ public class RobotMain extends SimpleRobot {
     private DriveSystemAccel drive = DriveSystemAccel.getAcceleratedInstance();
     private VexSpike intake;
     private VexSpike winch;
-    
     // User Control States
     public static final int START = 0;
     public static final int STARTPULL = 1;
@@ -75,7 +74,6 @@ public class RobotMain extends SimpleRobot {
         "much loose"
     };
     private int state;
-    
     // Autonomous States
     public static final int AUTO_START = 0;
     public static final int LEFT = 1;
@@ -87,7 +85,6 @@ public class RobotMain extends SimpleRobot {
         "Right",
         "Center"
     };
-    
     private int autoState;
     private long accelTime;
     // acceleration per millisecond
@@ -110,12 +107,10 @@ public class RobotMain extends SimpleRobot {
     private double joyScale = 1.0;
     private double joyScale2 = 1.0;
     private long ticks = 0;
-
     AxisCamera camera;          // the axis camera object (connected to the switch)
     CriteriaCollection cc;      // the criteria for doing the particle filter operation
     // we are storing the centers of masses
     public Point[] massCenters = null;
-    
     private double horzCenterMassX, horzCenterMassY, vertCenterMassX, vertCenterMassY;
 
     protected void robotInit() {
@@ -132,9 +127,9 @@ public class RobotMain extends SimpleRobot {
         drive.addVictor(TRIGGER_PORT);
         drive.addVictor(WINCH_PORT);
         //trigger = new Victor(TRIGGER_VICTOR);
-        
+
         camera = AxisCamera.getInstance("10.40.79.11");
-        
+
 
         cc = new CriteriaCollection();      // create the criteria for the particle filter
         cc.addCriteria(NIVision.MeasurementType.IMAQ_MT_AREA, 400, 65535, false);
@@ -164,8 +159,7 @@ public class RobotMain extends SimpleRobot {
     }
 
     /**
-     * This function is called once each time the robot enters operator
-     * control.
+     * This function is called once each time the robot enters operator control.
      */
     public void operatorControl() {
         debug[0] = "User Control Mode";
@@ -276,7 +270,7 @@ public class RobotMain extends SimpleRobot {
                 }
                 if (triggerHasFired && currentTime - secondaryTriggerStart > 1000L) {
                     drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
-                    
+
                     if (fireLim.get() && currentTime - secondaryTriggerStart <= 4000L) {
                         // Limit switch not engaged, but all is well
                     } else {
@@ -284,7 +278,7 @@ public class RobotMain extends SimpleRobot {
                             // Limit switch not engaged, but time exceeded...
                             debug[2] = "WTFBBQ";
                         }
-                        
+
                         drive.set(TRIGGER_PORT, 0);
                         triggerHasFired = false;
                         secondaryTriggerStart = 0L;
@@ -304,7 +298,7 @@ public class RobotMain extends SimpleRobot {
                     autoStates(currentTime);
                     break;
             }
-            
+
             /**
              * TODO: Rewrite this to a switch case
              */
@@ -343,7 +337,7 @@ public class RobotMain extends SimpleRobot {
                         if (triggerHasFired && currentTime - triggerStart > 1000L) {
                             drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
                             winch.deactivate();
-                            
+
                             if (fireLim.get() && currentTime - triggerStart <= 4000L) {
                                 // Limit switch not engaged, but all is well
                             } else {
@@ -362,7 +356,7 @@ public class RobotMain extends SimpleRobot {
                     }
                 }
             }
-            
+
             if (left.getRawButton(TRIGGER_BUTTON_UP)) {
                 // Window motor positive
                 drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
@@ -393,7 +387,7 @@ public class RobotMain extends SimpleRobot {
             ColorImage image;                           // next 2 lines read image from flash on cRIO
             image = camera.getImage();
             //image = new RGBImage("/testImage.jpg");		// get the sample image from the cRIO flash
-            BinaryImage thresholdImage = image.thresholdRGB(0, 50, 150, 255, 0, 100);
+            BinaryImage thresholdImage = image.thresholdRGB(0, 50, 100, 255, 0, 50);
             //BinaryImage thresholdImage = image.thresholdHSV(60, 100, 90, 255, 20, 255);   // keep only red objects
             //thresholdImage.write("/threshold.bmp");
             BinaryImage convexHullImage = thresholdImage.convexHull(false);          // fill in occluded rectangles
@@ -428,18 +422,20 @@ public class RobotMain extends SimpleRobot {
                     System.out.println(i + ": VertGoal cx: " + report.center_mass_x_normalized + " cy: "
                             + report.center_mass_y_normalized
                             + " h: " + (report.boundingRectHeight / (double) report.imageHeight));
-                    double dist = 129166.84601965 * ( MathUtils.pow(report.boundingRectHeight, -1.172464652462));
-                    System.out.println(report.boundingRectHeight + ":"+dist);
+                    // This function seems to work only between 2-5 meters.
+                    //double dist = 129166.84601965 * ( MathUtils.pow(report.boundingRectHeight, -1.172464652462));
+                    System.out.println(report.boundingRectHeight);
                     //System.out.println( (347.5 * report.boundingRectHeight) / 92.0 );
                 }
-                
-                
-                
+
+
+
                 // The following code will only store the initial readings.
-                /*if (massCenters == null) {
-                    // We'll only take in the initial reading.
-                    massCenters = scores;
-                }//*/
+                /*
+                 * if (massCenters == null) { // We'll only take in the initial
+                 * reading. massCenters = scores;
+                }//
+                 */
 
                 // in discovering distance. ...
                 // y = distance to target (to find)
@@ -461,30 +457,41 @@ public class RobotMain extends SimpleRobot {
 
 
 
-                /*if(scoreCompare(scores[i], false))
-                 {
-                 System.out.println("particle: " + i + "is a High Goal  centerX: " + report.center_mass_x_normalized + "centerY: " + report.center_mass_y_normalized);
-                 System.out.println("Distance: " + computeDistance(thresholdImage, report, i, false));
-                 } else if (scoreCompare(scores[i], true)) {
-                 System.out.println("particle: " + i + "is a Middle Goal  centerX: " + report.center_mass_x_normalized + "centerY: " + report.center_mass_y_normalized);
-                 System.out.println("Distance: " + computeDistance(thresholdImage, report, i, true));
-                 } else {
-                 System.out.println("particle: " + i + "is not a goal  centerX: " + report.center_mass_x_normalized + "centerY: " + report.center_mass_y_normalized);
-                 }*/
+                /*
+                 * if(scoreCompare(scores[i], false)) {
+                 * System.out.println("particle: " + i + "is a High Goal
+                 * centerX: " + report.center_mass_x_normalized + "centerY: " +
+                 * report.center_mass_y_normalized);
+                 * System.out.println("Distance: " +
+                 * computeDistance(thresholdImage, report, i, false)); } else if
+                 * (scoreCompare(scores[i], true)) {
+                 * System.out.println("particle: " + i + "is a Middle Goal
+                 * centerX: " + report.center_mass_x_normalized + "centerY: " +
+                 * report.center_mass_y_normalized);
+                 * System.out.println("Distance: " +
+                 * computeDistance(thresholdImage, report, i, true)); } else {
+                 * System.out.println("particle: " + i + "is not a goal centerX:
+                 * " + report.center_mass_x_normalized + "centerY: " +
+                 * report.center_mass_y_normalized);
+                 }
+                 */
                 //System.out.println("rect: " + scores[i].rectangularity + "ARinner: " + scores[i].aspectRatioInner);
                 //System.out.println("ARouter: " + scores[i].aspectRatioOuter + "xEdge: " + scores[i].xEdge + "yEdge: " + scores[i].yEdge);	
             }
-            
+
             massCenters = scores;
             ImagingUtils.determineGoals(scores);
-            
+
             for (int i = 0; i < scores.length; i++) {
                 Point cur = scores[i];
-                String o = cur.getOrientation() == Point.HORIZONTAL ? "h" : "v";
-                String s = cur.getSide() == Point.INVALID ? "I" : 
-                        (cur.getSide() == Point.LEFT ? "L" : "R");
+                String o = cur.getOrientation() == Point.INVALID ? "Invalid"
+                        : (cur.getOrientation() == Point.HORIZONTAL ? "Horiz" : "Vert");
+                String s = cur.getSide() == Point.INVALID ? "Invalid"
+                        : (cur.getSide() == Point.LEFT ? "Left" : "Right");
+
+                String h = cur.isHot() ? "Hot" : "NotHot";
                 
-                System.out.println(i + " " + o + " " + s);
+                System.out.println("Goal " + i + ": " + o + " " + s + " " + h);
             }
 
             //public void checkRegion(
@@ -505,7 +512,6 @@ public class RobotMain extends SimpleRobot {
         }
         lastUpdate = System.currentTimeMillis();
     }
-
 
     private void autoStates(long currTime) {
         switch (state) {
@@ -626,8 +632,7 @@ public class RobotMain extends SimpleRobot {
 
     /**
      * private void sleepBro(int time){ try{ Thread.sleep(time); }
-     * catch(Exception e){ // we should be going here }
-    }//
+     * catch(Exception e){ // we should be going here } }//
      */
     private void doArcadeDrive(String[] debug) {
         double leftMove = 0.0;
