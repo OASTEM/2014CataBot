@@ -112,6 +112,7 @@ public class RobotMain extends SimpleRobot {
     // we are storing the centers of masses
     public Point[] massCenters = null;
     private double horzCenterMassX, horzCenterMassY, vertCenterMassX, vertCenterMassY;
+    private int vertHeight;
 
     protected void robotInit() {
         Debug.clear();
@@ -119,13 +120,15 @@ public class RobotMain extends SimpleRobot {
         state = START;
         lastUpdate = System.currentTimeMillis();
         motorTime = 0L;
+        vertHeight = 0;
 
-        drive.initializeDrive(LEFT_DRIVE_FRONT, LEFT_DRIVE_REAR, RIGHT_DRIVE_FRONT, RIGHT_DRIVE_REAR);
+        //drive.initializeDrive(LEFT_DRIVE_FRONT, LEFT_DRIVE_REAR, RIGHT_DRIVE_FRONT, RIGHT_DRIVE_REAR);
+        drive.initializeDrive(6,4);
         drive.setSafety(false);
-        intake = new VexSpike(INTAKE_SPIKE);
-        winch = new VexSpike(WINCH_SPIKE);
-        drive.addJaguar(TRIGGER_PORT);
-        drive.addJaguar(WINCH_PORT);
+        //intake = new VexSpike(INTAKE_SPIKE);
+        //winch = new VexSpike(WINCH_SPIKE);
+        //drive.addJaguar(TRIGGER_PORT);
+        //drive.addJaguar(WINCH_PORT);
         //trigger = new Jaguar(TRIGGER_Jaguar);
 
         camera = AxisCamera.getInstance("10.40.79.11");
@@ -152,6 +155,7 @@ public class RobotMain extends SimpleRobot {
             switch (autoState) {
                 case AUTO_START:
                     imageProcessing();
+                    autoMove();
                     lastUpdate = System.currentTimeMillis();
             }
             Debug.log(debug);
@@ -382,10 +386,10 @@ public class RobotMain extends SimpleRobot {
 	}
 
 	public void autoMove () {
-		if(canShoot(0.0)) {
+		if(canShoot(vertHeight)) {
 			drive.tankDrive(0,0);
 		}
-		drive.tankDrive(0.5, 0.5);
+		drive.tankDrive(-0.5, -0.5);
 	}
 
 	public void endMove () {
@@ -434,6 +438,7 @@ public class RobotMain extends SimpleRobot {
                     System.out.println(i + ": VertGoal cx: " + report.center_mass_x_normalized + " cy: "
                             + report.center_mass_y_normalized
                             + " h: " + (report.boundingRectHeight / (double) report.imageHeight));
+                    vertHeight = report.boundingRectHeight;
                     // This function seems to work only between 2-5 meters.
                     //double dist = 129166.84601965 * ( MathUtils.pow(report.boundingRectHeight, -1.172464652462));
                     System.out.println(report.boundingRectHeight);

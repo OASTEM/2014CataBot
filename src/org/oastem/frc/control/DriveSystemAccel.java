@@ -45,6 +45,14 @@ public class DriveSystemAccel extends DriveSystem {
         //acceleration[rightRear] = new Accelerator();
         super.initializeDrive(leftFront, leftRear, rightFront, rightRear);
     }
+    
+    public void initializeDrive(int left, int right){
+        locs[0] = left;
+        locs[2] = right;
+        acceleration[left] =  new Accelerator();
+        acceleration[right] = new Accelerator();
+        super.initializeDrive(left, right);
+    }
 
     public void initializeSecondaryDrive(int l2, int r2) {
         locs[locCount++] = l2;

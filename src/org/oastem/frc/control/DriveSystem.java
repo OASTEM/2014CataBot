@@ -36,6 +36,10 @@ public class DriveSystem {
         drive = new RobotDrive(leftFront, leftRear, rightFront, rightRear);
     }
     
+    public void initializeDrive(int left, int right){
+        drive = new RobotDrive(left, right);
+    }
+    
     public void setDrive(RobotDrive rd) {
         drive = rd;
     }
