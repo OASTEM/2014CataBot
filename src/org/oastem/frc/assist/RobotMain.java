@@ -198,20 +198,9 @@ public class RobotMain extends SimpleRobot {
                 winchMovePressed = false;
             }
 
-            if (left.getRawButton(EMERGENCY_STOP_BUTTON)) {
+            if (left.getRawButton(EMERGENCY_STOP_BUTTON) || right.getRawButton(9)) {
                 // HOLY CRAP STOP
                 drive.set(TRIGGER_PORT, 0);
-                drive.set(WINCH_PORT, 0);
-                winch.deactivate();
-                winchMovePressed = false;
-                triggerHasFired = false;
-                triggerStart = 0L;
-                debug[0] = "Soft Emergency Stop";
-                Debug.log(debug);
-                return;
-            }
-
-            if (right.getRawButton(9)) {
                 winch.deactivate();
                 drive.set(WINCH_PORT, 0);
                 triggerHasFired = false;
@@ -379,6 +368,29 @@ public class RobotMain extends SimpleRobot {
             lastUpdate = System.currentTimeMillis();
         }
     }
+
+	public double angleTurned (double oldX, double newX, double total) {
+		double oneDeg = total/80;
+		return (newX- oldX)/oneDeg;
+	}
+
+	public boolean canShoot (double pixelSize) {
+		if(pixelSize >= 101) {
+			return true;
+		}
+		return false;
+	}
+
+	public void autoMove () {
+		if(canShoot(0.0)) {
+			drive.tankDrive(0,0);
+		}
+		drive.tankDrive(0.5, 0.5);
+	}
+
+	public void endMove () {
+		
+	}
 
     private void imageProcessing() {
         try {
@@ -630,10 +642,6 @@ public class RobotMain extends SimpleRobot {
         drive.set(WINCH_PORT, pow);
     }
 
-    /**
-     * private void sleepBro(int time){ try{ Thread.sleep(time); }
-     * catch(Exception e){ // we should be going here } }//
-     */
     private void doArcadeDrive(String[] debug) {
         double leftMove = 0.0;
         double rightMove = 0.0;
