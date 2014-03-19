@@ -6,7 +6,7 @@ package org.oastem.frc.control;
 
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
-import edu.wpi.first.wpilibj.Victor;
+import edu.wpi.first.wpilibj.Jaguar;
 import java.util.Hashtable;
 
 /**
@@ -16,12 +16,12 @@ import java.util.Hashtable;
 public class DriveSystem {
     protected static DriveSystem instance;
     protected RobotDrive drive;
-    protected Victor[] raw;
+    protected Jaguar[] raw;
     protected boolean hasSecondary = false;
     protected RobotDrive drive2;
     
     protected DriveSystem() {
-        raw = new Victor[12];
+        raw = new Jaguar[12];
     }
     
     public static DriveSystem getInstance() {
@@ -64,8 +64,8 @@ public class DriveSystem {
         if (hasSecondary) drive2.tankDrive(x, y);
     }
     
-    public void addVictor(int port) {
-        raw[port] = new Victor(port);
+    public void addJaguar(int port) {
+        raw[port] = new Jaguar(port);
     }
     
     public void set(int vic, double power) {
@@ -76,7 +76,7 @@ public class DriveSystem {
         return raw[vic].get();
     }
     
-    public Victor getVictor(int vic) {
+    public Jaguar getJaguar(int vic) {
         return raw[vic];
     }
     

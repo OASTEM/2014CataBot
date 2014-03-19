@@ -28,7 +28,7 @@ import com.sun.squawk.util.MathUtils;
  * directory.
  */
 public class RobotMain extends SimpleRobot {
-    // Ports for Victor
+    // Ports for Jaguar
 
     public static final int WINCH_PORT = 1;
     public static final int RIGHT_DRIVE_FRONT = 4;
@@ -103,7 +103,7 @@ public class RobotMain extends SimpleRobot {
     private String[] debug = new String[6];
     private Joystick left = new Joystick(1);
     private Joystick right = new Joystick(2);
-    //private Victor trigger;
+    //private Jaguar trigger;
     private double joyScale = 1.0;
     private double joyScale2 = 1.0;
     private long ticks = 0;
@@ -124,9 +124,9 @@ public class RobotMain extends SimpleRobot {
         drive.setSafety(false);
         intake = new VexSpike(INTAKE_SPIKE);
         winch = new VexSpike(WINCH_SPIKE);
-        drive.addVictor(TRIGGER_PORT);
-        drive.addVictor(WINCH_PORT);
-        //trigger = new Victor(TRIGGER_VICTOR);
+        drive.addJaguar(TRIGGER_PORT);
+        drive.addJaguar(WINCH_PORT);
+        //trigger = new Jaguar(TRIGGER_Jaguar);
 
         camera = AxisCamera.getInstance("10.40.79.11");
 
