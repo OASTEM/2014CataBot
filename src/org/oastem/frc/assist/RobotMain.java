@@ -39,6 +39,8 @@ public class RobotMain extends SimpleRobot {
     public static final int WINCH_SPIKE = 8;
     public static final int TRIGGER_PORT = 2;
     // Buttons:
+    
+    // Left Joystick
     public static final int INTAKE_BUTTON = 6;
     public static final int TRIGGER_BUTTON = 1;
     public static final int OUTTAKE_BUTTON = 7;
@@ -49,6 +51,11 @@ public class RobotMain extends SimpleRobot {
     public static final int WINCH_BUTTON_SPIKE = 8;
     public static final int EMERGENCY_STOP_BUTTON = 4;
     public static final int SECONDARY_FIRE_BUTTON = 5;
+    public static final int TOGGLE_DECEL_BUTTON = 9;
+    
+    // Right Joystick
+    public static final int EMERGENCY_STOP_BUTTON_RIGHT = 9;
+    
     private static final double TRIGGER_SPEED_UP = -0.75;
     private static final double TRIGGER_SPEED_DOWN = 0.25;
     private DriveSystemAccel drive = DriveSystemAccel.getAcceleratedInstance();
@@ -86,6 +93,15 @@ public class RobotMain extends SimpleRobot {
         "Center"
     };
     private int autoState;
+    
+    // corresponding distance from using pixel height of vertical vision target
+    public static final int TWO_METER = 211;
+    public static final int THREE_METER = 175;
+    public static final int FOUR_METER = 136;
+    public static final int FIVE_METER = 111;
+    public static final int SHOOT_METER = 101; //lol (5.46-5.48 meters)
+    public static final int SIX_METER = 92;
+    
     private long accelTime;
     // acceleration per millisecond
     private long triggerStart = 0L;
@@ -113,6 +129,8 @@ public class RobotMain extends SimpleRobot {
     public Point[] massCenters = null;
     private double horzCenterMassX, horzCenterMassY, vertCenterMassX, vertCenterMassY;
     private int vertHeight;
+    
+    private boolean deceled = false;
 
     protected void robotInit() {
         Debug.clear();
@@ -157,6 +175,7 @@ public class RobotMain extends SimpleRobot {
                     imageProcessing();
                     autoMove();
                     lastUpdate = System.currentTimeMillis();
+                    break;
             }
             Debug.log(debug);
         }
@@ -187,6 +206,17 @@ public class RobotMain extends SimpleRobot {
             joyScale2 = scaleZ(right.getZ());
             debug[1] = "Speed: " + speed;
             debug[2] = STATE_ARRAY[state];
+            
+            
+            if(left.getRawButton(TOGGLE_DECEL_BUTTON)){
+                if(deceled){
+                    deceled = false;//drive.setDriveDecelSkip(false);
+                }
+                else{
+                    deceled = true;
+                    //drive.setDriveDecelSkip(true);
+                }
+            }
 
             if (left.getRawButton(WINCH_BUTTON_UP)) {
                 drive.set(WINCH_PORT, 1.0);
@@ -202,7 +232,7 @@ public class RobotMain extends SimpleRobot {
                 winchMovePressed = false;
             }
 
-            if (left.getRawButton(EMERGENCY_STOP_BUTTON) || right.getRawButton(9)) {
+            if (left.getRawButton(EMERGENCY_STOP_BUTTON) || right.getRawButton(EMERGENCY_STOP_BUTTON_RIGHT)) {
                 // HOLY CRAP STOP
                 drive.set(TRIGGER_PORT, 0);
                 winch.deactivate();
@@ -379,17 +409,21 @@ public class RobotMain extends SimpleRobot {
 	}
 
 	public boolean canShoot (double pixelSize) {
-		if(pixelSize >= 101) {
-			return true;
+		if(pixelSize >= (SHOOT_METER - 10) ) {
+                    //drive.setDriveDecelSkip(true);
+                    deceled = true;
+                    return true;
 		}
 		return false;
 	}
 
 	public void autoMove () {
 		if(canShoot(vertHeight)) {
-			drive.tankDrive(0,0);
-		}
-		drive.tankDrive(-0.5, -0.5);
+                    drive.tankDrive(0,0, deceled);
+		} 
+                else {
+                    drive.tankDrive(-0.5, -0.5, deceled);
+                }
 	}
 
 	public void endMove () {
@@ -675,12 +709,12 @@ public class RobotMain extends SimpleRobot {
         //currSpeedRight = accelerate(currSpeedRight,rightDrive, timeDiff); //
         debug[3] = "Scale: " + joyScale;
         debug[4] = "Left: " + getDriveSpeed(LEFT_DRIVE_FRONT) + " Right: " + getDriveSpeed(RIGHT_DRIVE_FRONT);
-        drive.tankDrive(leftMove, rightMove);
+        drive.tankDrive(leftMove, rightMove, deceled);
     }
 
     private void autoDrive(double a, double b, String[] debug) {
         debug[4] = "Left: " + getDriveSpeed(LEFT_DRIVE_FRONT) + " Right: " + getDriveSpeed(RIGHT_DRIVE_FRONT);
-        drive.tankDrive(a, b);
+        drive.tankDrive(a, b, deceled);
     }
 
     private double getDriveSpeed(int port) {

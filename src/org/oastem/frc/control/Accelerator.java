@@ -10,8 +10,10 @@ public class Accelerator {
     private double speed;
     public static final double THRESHOLD = 0.005;
     public static final double ACCEL_FACTOR = 0.1;
+    //private boolean skipper;
 
     public Accelerator() {
+        //skipper = false;
         currTime = System.currentTimeMillis();
         thisTime = currTime;
         speed = 0.0;
@@ -26,7 +28,7 @@ public class Accelerator {
     private double accelerate(double currSpeed, double commandSpeed, long time) {
         System.out.println(currSpeed+" Distance/Time");
         if (Math.abs(currSpeed - commandSpeed) > THRESHOLD) {
-            if (time > 40L) {
+           if (time > 40L) {
                 if (commandSpeed > currSpeed) {
                     currSpeed = currSpeed + ACCEL_FACTOR;
                 } else if (commandSpeed < currSpeed) {
@@ -42,4 +44,5 @@ public class Accelerator {
     public double getSpeed() {
         return speed;
     }
+    
 }

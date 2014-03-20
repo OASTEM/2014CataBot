@@ -72,10 +72,16 @@ public class DriveSystemAccel extends DriveSystem {
         speed[locs[vic]] = power;
         super.set(vic, power);
     }
+    
+    //public void setMotorDecelSkip(int vic, boolean skip){
+    //    acceleleration[locs[vic]].skipDecel(skip);
+    //}
 
-    public void tankDrive(double x, double y) {
-        x = acceleration[locs[0]].accelerateValue(x);
-        y = acceleration[locs[2]].accelerateValue(y);
+    public void tankDrive(double x, double y, boolean skip) {
+        if(!skip){
+            x = acceleration[locs[0]].accelerateValue(x);
+            y = acceleration[locs[2]].accelerateValue(y);
+        }
         super.tankDrive(x, y);
     }
 
