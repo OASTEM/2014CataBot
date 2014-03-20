@@ -76,14 +76,16 @@ public class RobotMain extends SimpleRobot {
     private int state;
     // Autonomous States
     public static final int AUTO_START = 0;
-    public static final int LEFT = 1;
-    public static final int RIGHT = 2;
-    public static final int CENTER = 3;
+    public static final int MOVE_FORWARD = 1;
+    public static final int SHOOT = 2;
+    public static final int AFTER_MOVE = 3;
+    public static final int DONE = 4;
     public static final String[] AUTO_STATE_ARRAY = {
         "Start",
-        "Left",
-        "Right",
-        "Center"
+        "Moving Forward",
+        "Shoot",
+        "After Move",
+        "Done"
     };
     private int autoState;
     private long accelTime;
@@ -152,37 +154,77 @@ public class RobotMain extends SimpleRobot {
         debug[0] = "Autonomous mode";
         autoState = AUTO_START;
         while (isAutonomous() && isEnabled()) {
+			long currentTime = System.currentTimeMillis();
             switch (autoState) {
                 case AUTO_START:
+					debug[2] = AUTO_STATE_ARRAY[autoState];
                     imageProcessing();
                     //Determine left or right and set appropriate state
                     if (currentHotGoal == Point.LEFT) {
-						autoState = LEFT;
+						debug[1] = "LEFT";
+						autoState = MOVE_FORWARD;
 					} else if (currentHotGoal == Point.RIGHT) {
-						autoState = RIGHT;
-					} else System.out.println("Invalid side");
-					
-                    lastUpdate = System.currentTimeMillis();
+						debug[1] = "RIGHT";
+						autoState = MOVE_FORWARD;
+					}
+					else System.out.println("Invalid side");
+					autoState = MOVE_FORWARD;
                     break;
+                case MOVE_FORWARD:
+					debug[2] = AUTO_STATE_ARRAY[autoState];
+					//move forward
+					if (!canShoot(vertHeight)) autoMove();
+					else autoState = SHOOT;
+					break;
+				case SHOOT:
+					debug[2] = AUTO_STATE_ARRAY[autoState];
+					//shoot
+					state = RELEASE;
+					autoStates(currentTime);
+					autoState = AFTER_MOVE;
+					break;
+				case AFTER_MOVE:
+					debug[2] = AUTO_STATE_ARRAY[autoState];
+					//move again
+					if (vertHeight >= THREE_METER) autoState = DONE;
+					break;
+				case DONE;
+					Debug[2] = AUTO_STATE_ARRAY[autoState];
+					//u wot m8
+					break;
+                 /**
                 case LEFT:
+					Debug[1] = AUTO_STATE_ARRAY[autoState];
 					//move until goal range
-					if (!canShoot()){
+					if (!canShoot(vertHeight) && !hasFired){
 						autoMove();
 					}
 					//wait till hot
-					else if (curGoal.isHot){
-						
-					}
+					else if (curGoal.isHot && !hasFired){
+						//set shootings states
+						state = RELEASE;
 					//shoot
-					//move again
+						autoStates(currentTime);
+						hasFired = true;
+						System.out.println("#Shotsfired");
+					}
+					else if(hasFired && vertHeight > THREE_METER){
+					//move forward and make sure it doesn't crash in some manner
+						autoMove();
+						}
+					else autoState = DONE;
+					
 					break;
 				case RIGHT:
 					//Right code
 					break;
+					 */
 				default: System.out.println("This code doesn't work. (autonomous() switch thing).");
 				break;
             }
+
             Debug.log(debug);
+            //lastUpdate = System.currentTimeMillis();
         }
     }
 
@@ -415,7 +457,7 @@ public class RobotMain extends SimpleRobot {
         if (canShoot(0.0)) {
             drive.tankDrive(0, 0);
         }
-        drive.tankDrive(0.5, 0.5);
+        drive.tankDrive(0.5, 0.5);1
     }
 
     public void endMove() {
