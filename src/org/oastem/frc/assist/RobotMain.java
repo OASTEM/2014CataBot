@@ -83,14 +83,16 @@ public class RobotMain extends SimpleRobot {
     private int state;
     // Autonomous States
     public static final int AUTO_START = 0;
-    public static final int LEFT = 1;
-    public static final int RIGHT = 2;
-    public static final int CENTER = 3;
+    public static final int MOVE_FORWARD = 1;
+    public static final int SHOOT = 2;
+    public static final int AFTER_MOVE = 3;
+    public static final int DONE = 4;
     public static final String[] AUTO_STATE_ARRAY = {
         "Start",
-        "Left",
-        "Right",
-        "Center"
+        "Moving Forward",
+        "Shoot",
+        "After Move",
+        "Done"
     };
     private int autoState;
     
@@ -127,10 +129,10 @@ public class RobotMain extends SimpleRobot {
     CriteriaCollection cc;      // the criteria for doing the particle filter operation
     // we are storing the centers of masses
     public Point[] massCenters = null;
-    private double horzCenterMassX, horzCenterMassY, vertCenterMassX, vertCenterMassY;
-    private int vertHeight;
-    
     private boolean deceled = false;
+    private double horzCenterMassX, horzCenterMassY, vertCenterMassX, vertCenterMassY;
+    private int currentHotGoal = Point.INVALID;
+    private int vertHeight;
 
     protected void robotInit() {
         Debug.clear();
@@ -170,14 +172,78 @@ public class RobotMain extends SimpleRobot {
         debug[0] = "Autonomous mode";
         autoState = AUTO_START;
         while (isAutonomous() && isEnabled()) {
+			long currentTime = System.currentTimeMillis();
             switch (autoState) {
-                case AUTO_START:
+                case AUTO_START :
+					debug[2] = AUTO_STATE_ARRAY[autoState];
                     imageProcessing();
                     autoMove();
-                    lastUpdate = System.currentTimeMillis();
+                    //Determine left or right and set appropriate state
+                    if (currentHotGoal == Point.LEFT) {
+						debug[1] = "LEFT";
+						autoState = MOVE_FORWARD;
+					} else if (currentHotGoal == Point.RIGHT) {
+						debug[1] = "RIGHT";
+						autoState = MOVE_FORWARD;
+					}
+					else System.out.println("Invalid side");
+					autoState = MOVE_FORWARD;
                     break;
+                case MOVE_FORWARD :
+					debug[2] = AUTO_STATE_ARRAY[autoState];
+					//move forward
+					if (!canShoot(vertHeight)) autoMove();
+					else autoState = SHOOT;
+					break;
+				case SHOOT :
+					debug[2] = AUTO_STATE_ARRAY[autoState];
+					//shoot
+					state = RELEASE;
+					autoStates(currentTime);
+					autoState = AFTER_MOVE;
+					break;
+				case AFTER_MOVE :
+					debug[2] = AUTO_STATE_ARRAY[autoState];
+					//move again
+					if (vertHeight >= THREE_METER) autoState = DONE;
+					break;
+				case DONE :
+					debug[2] = AUTO_STATE_ARRAY[autoState];
+					//u wot m8
+					break;
+                 /**
+                case LEFT:
+					Debug[1] = AUTO_STATE_ARRAY[autoState];
+					//move until goal range
+					if (!canShoot(vertHeight) && !hasFired){
+						autoMove();
+					}
+					//wait till hot
+					else if (curGoal.isHot && !hasFired){
+						//set shootings states
+						state = RELEASE;
+					//shoot
+						autoStates(currentTime);
+						hasFired = true;
+						System.out.println("#Shotsfired");
+					}
+					else if(hasFired && vertHeight > THREE_METER){
+					//move forward and make sure it doesn't crash in some manner
+						autoMove();
+						}
+					else autoState = DONE;
+					
+					break;
+				case RIGHT:
+					//Right code
+					break;
+					 */
+				default: System.out.println("This code doesn't work. (autonomous() switch thing).");
+				break;
             }
+
             Debug.log(debug);
+            //lastUpdate = System.currentTimeMillis();
         }
     }
 
@@ -216,6 +282,12 @@ public class RobotMain extends SimpleRobot {
                     deceled = true;
                     //drive.setDriveDecelSkip(true);
                 }
+
+            if (canShoot(vertHeight)) {
+                debug[2] = debug[2] + " SHOOT NOW!";
+            } else {
+                debug[2] = STATE_ARRAY[state];
+
             }
 
             if (left.getRawButton(WINCH_BUTTON_UP)) {
@@ -402,6 +474,7 @@ public class RobotMain extends SimpleRobot {
             lastUpdate = System.currentTimeMillis();
         }
     }
+    }
 
 	public double angleTurned (double oldX, double newX, double total) {
 		double oneDeg = total/80;
@@ -484,8 +557,7 @@ public class RobotMain extends SimpleRobot {
                 // The following code will only store the initial readings.
                 /*
                  * if (massCenters == null) { // We'll only take in the initial
-                 * reading. massCenters = scores;
-                }//
+                 * reading. massCenters = scores; }//
                  */
 
                 // in discovering distance. ...
@@ -523,8 +595,7 @@ public class RobotMain extends SimpleRobot {
                  * computeDistance(thresholdImage, report, i, true)); } else {
                  * System.out.println("particle: " + i + "is not a goal centerX:
                  * " + report.center_mass_x_normalized + "centerY: " +
-                 * report.center_mass_y_normalized);
-                 }
+                 * report.center_mass_y_normalized); }
                  */
                 //System.out.println("rect: " + scores[i].rectangularity + "ARinner: " + scores[i].aspectRatioInner);
                 //System.out.println("ARouter: " + scores[i].aspectRatioOuter + "xEdge: " + scores[i].xEdge + "yEdge: " + scores[i].yEdge);	
@@ -542,6 +613,10 @@ public class RobotMain extends SimpleRobot {
 
                 String h = cur.isHot() ? "Hot" : "NotHot";
                 
+                if (cur.isHot()) {
+					currentHotGoal = cur.getSide();
+				}
+
                 System.out.println("Goal " + i + ": " + o + " " + s + " " + h);
             }
 
@@ -673,7 +748,7 @@ public class RobotMain extends SimpleRobot {
         }
         winchMove *= joyScale2 * -1;
 
-        debug[5] = "rScale: " + joyScale2 + " Winch: " + winchMove;
+        //debug[5] = "rScale: " + joyScale2 + " Winch: " + winchMove;
         drive.set(WINCH_PORT, winchMove);
     }
 

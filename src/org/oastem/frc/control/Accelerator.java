@@ -30,9 +30,11 @@ public class Accelerator {
         if (Math.abs(currSpeed - commandSpeed) > THRESHOLD) {
            if (time > 40L) {
                 if (commandSpeed > currSpeed) {
+                    // acceleration
                     currSpeed = currSpeed + ACCEL_FACTOR;
                 } else if (commandSpeed < currSpeed) {
-                    currSpeed = currSpeed - ACCEL_FACTOR;
+                    // deceleration
+                    currSpeed = currSpeed - ACCEL_FACTOR/2;
                 }
                 thisTime = currTime;
             }
