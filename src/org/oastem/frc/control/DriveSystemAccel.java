@@ -2,7 +2,7 @@ package org.oastem.frc.control;
 
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.RobotDrive;
-import edu.wpi.first.wpilibj.Jaguar;
+import edu.wpi.first.wpilibj.Victor;
 import java.util.Hashtable;
 
 /**
@@ -62,10 +62,10 @@ public class DriveSystemAccel extends DriveSystem {
         super.initializeSecondaryDrive(l2, r2);
     }
 
-    public void addJaguar(int port) {
+    public void addVictor(int port) {
         locs[locCount++] = port;
         //acceleration[port] = new Accelerator();
-        super.addJaguar(port);
+        super.addVictor(port);
     }
 
     public void set(int vic, double power) {

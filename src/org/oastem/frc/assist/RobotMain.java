@@ -28,7 +28,7 @@ import com.sun.squawk.util.MathUtils;
  * directory.
  */
 public class RobotMain extends SimpleRobot {
-    // Ports for Jaguar
+    // Ports for Victor
 
     public static final int WINCH_PORT = 1;
     public static final int RIGHT_DRIVE_FRONT = 4;
@@ -116,7 +116,7 @@ public class RobotMain extends SimpleRobot {
     private String[] debug = new String[6];
     private Joystick left = new Joystick(1);
     private Joystick right = new Joystick(2);
-    //private Jaguar trigger;
+    private Victor trigger;
     private double joyScale = 1.0;
     private double joyScale2 = 1.0;
     private long ticks = 0;
@@ -137,14 +137,14 @@ public class RobotMain extends SimpleRobot {
         motorTime = 0L;
         vertHeight = 0;
 
-        //drive.initializeDrive(LEFT_DRIVE_FRONT, LEFT_DRIVE_REAR, RIGHT_DRIVE_FRONT, RIGHT_DRIVE_REAR);
-        drive.initializeDrive(6, 4);
+        drive.initializeDrive(LEFT_DRIVE_FRONT, LEFT_DRIVE_REAR, RIGHT_DRIVE_FRONT, RIGHT_DRIVE_REAR);
+        //drive.initializeDrive(6, 4);
         drive.setSafety(false);
-        //intake = new VexSpike(INTAKE_SPIKE);
-        //winch = new VexSpike(WINCH_SPIKE);
-        //drive.addJaguar(TRIGGER_PORT);
-        //drive.addJaguar(WINCH_PORT);
-        //trigger = new Jaguar(TRIGGER_Jaguar);
+        intake = new VexSpike(INTAKE_SPIKE);
+        winch = new VexSpike(WINCH_SPIKE);
+        drive.addVictor(TRIGGER_PORT);
+        drive.addVictor(WINCH_PORT);
+        trigger = new Victor(TRIGGER_PORT);
 
         camera = AxisCamera.getInstance("10.40.79.11");
 
@@ -184,10 +184,9 @@ public class RobotMain extends SimpleRobot {
                     break;
                 case SHOOT:
                     //shoot
-                    //state = RELEASE;
+                    state = RELEASE;
                     if (currentHotGoal == Point.LEFT || currentHotGoal == Point.RIGHT) {
-                        //autoStates(currentTime);
-                        autoState = AFTER_MOVE; //remove this 
+                        autoStates(currentTime);
                     }
                     break;
                 case AFTER_MOVE:
@@ -307,7 +306,7 @@ public class RobotMain extends SimpleRobot {
                 winchPressed = false;
             }
 
-            //this.doingWinchStuff(debug);
+            this.doingWinchStuff(debug);
 
             this.doArcadeDrive(debug);
 
@@ -430,7 +429,7 @@ public class RobotMain extends SimpleRobot {
                 }
             }
             
-            /**
+            
             if (left.getRawButton(TRIGGER_BUTTON_UP)) {
                 // Window motor positive
                 drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
@@ -462,7 +461,7 @@ public class RobotMain extends SimpleRobot {
     public boolean canShoot(int pixelSize) {
         if (vertHeight >= pixelSize) {
             //drive.setDriveDecelSkip(true);
-            deceled = true;
+            //deceled = true;
             return true;
         }
         return false;
@@ -470,6 +469,7 @@ public class RobotMain extends SimpleRobot {
 
     public boolean autoMove(int pix) {
         if (canShoot(pix)) {
+            deceled = true;
             drive.tankDrive(0, 0, deceled);
             deceled = false;
             return true;
@@ -477,9 +477,6 @@ public class RobotMain extends SimpleRobot {
             drive.tankDrive(-0.5, -0.5, deceled);
             return false;
         }
-    }
-
-    public void endMove() {
     }
 
     private void imageProcessing() {
@@ -763,8 +760,8 @@ public class RobotMain extends SimpleRobot {
         //currSpeedLeft = accelerate(currSpeedLeft,leftDrive, timeDiff);
         //currSpeedRight = accelerate(currSpeedRight,rightDrive, timeDiff); //
         debug[3] = "Scale: " + joyScale;
-        //debug[4] = "Left: " + getDriveSpeed(LEFT_DRIVE_FRONT) + " Right: " + getDriveSpeed(RIGHT_DRIVE_FRONT);
-        debug[4] = "Left: " + getDriveSpeed(6) + " Right: " + getDriveSpeed(4); //change this
+        debug[4] = "Left: " + getDriveSpeed(LEFT_DRIVE_FRONT) + " Right: " + getDriveSpeed(RIGHT_DRIVE_FRONT);
+        //debug[4] = "Left: " + getDriveSpeed(6) + " Right: " + getDriveSpeed(4); //change this
         drive.tankDrive(leftMove, rightMove, deceled);
     }
 
