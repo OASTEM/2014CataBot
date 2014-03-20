@@ -9,7 +9,7 @@ public class Accelerator {
     private long thisTime;
     private double speed;
     public static final double THRESHOLD = 0.005;
-    public static final double ACCEL_FACTOR = 0.1;
+    public static final double ACCEL_FACTOR = 0.2;
     //private boolean skipper;
 
     public Accelerator() {

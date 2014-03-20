@@ -39,7 +39,6 @@ public class RobotMain extends SimpleRobot {
     public static final int WINCH_SPIKE = 8;
     public static final int TRIGGER_PORT = 2;
     // Buttons:
-    
     // Left Joystick
     public static final int INTAKE_BUTTON = 6;
     public static final int TRIGGER_BUTTON = 1;
@@ -52,10 +51,8 @@ public class RobotMain extends SimpleRobot {
     public static final int EMERGENCY_STOP_BUTTON = 4;
     public static final int SECONDARY_FIRE_BUTTON = 5;
     public static final int TOGGLE_DECEL_BUTTON = 9;
-    
     // Right Joystick
     public static final int EMERGENCY_STOP_BUTTON_RIGHT = 9;
-    
     private static final double TRIGGER_SPEED_UP = -0.75;
     private static final double TRIGGER_SPEED_DOWN = 0.25;
     private DriveSystemAccel drive = DriveSystemAccel.getAcceleratedInstance();
@@ -95,7 +92,6 @@ public class RobotMain extends SimpleRobot {
         "Done"
     };
     private int autoState;
-    
     // corresponding distance from using pixel height of vertical vision target
     public static final int TWO_METER = 211;
     public static final int THREE_METER = 175;
@@ -103,7 +99,6 @@ public class RobotMain extends SimpleRobot {
     public static final int FIVE_METER = 111;
     public static final int SHOOT_METER = 101; //lol (5.46-5.48 meters)
     public static final int SIX_METER = 92;
-    
     private long accelTime;
     // acceleration per millisecond
     private long triggerStart = 0L;
@@ -143,7 +138,7 @@ public class RobotMain extends SimpleRobot {
         vertHeight = 0;
 
         //drive.initializeDrive(LEFT_DRIVE_FRONT, LEFT_DRIVE_REAR, RIGHT_DRIVE_FRONT, RIGHT_DRIVE_REAR);
-        drive.initializeDrive(6,4);
+        drive.initializeDrive(6, 4);
         drive.setSafety(false);
         //intake = new VexSpike(INTAKE_SPIKE);
         //winch = new VexSpike(WINCH_SPIKE);
@@ -172,74 +167,54 @@ public class RobotMain extends SimpleRobot {
         debug[0] = "Autonomous mode";
         autoState = AUTO_START;
         while (isAutonomous() && isEnabled()) {
-			long currentTime = System.currentTimeMillis();
+            long currentTime = System.currentTimeMillis();
+            imageProcessing();
+            debug[2] = AUTO_STATE_ARRAY[autoState];
             switch (autoState) {
-                case AUTO_START :
-					debug[2] = AUTO_STATE_ARRAY[autoState];
-                    imageProcessing();
-                    autoMove();
+                case AUTO_START:
+                    //autoMove();
                     //Determine left or right and set appropriate state
-                    if (currentHotGoal == Point.LEFT) {
-						debug[1] = "LEFT";
-						autoState = MOVE_FORWARD;
-					} else if (currentHotGoal == Point.RIGHT) {
-						debug[1] = "RIGHT";
-						autoState = MOVE_FORWARD;
-					}
-					else System.out.println("Invalid side");
-					autoState = MOVE_FORWARD;
+                    autoState = MOVE_FORWARD;
                     break;
-                case MOVE_FORWARD :
-					debug[2] = AUTO_STATE_ARRAY[autoState];
-					//move forward
-					if (!canShoot(vertHeight)) autoMove();
-					else autoState = SHOOT;
-					break;
-				case SHOOT :
-					debug[2] = AUTO_STATE_ARRAY[autoState];
-					//shoot
-					state = RELEASE;
-					autoStates(currentTime);
-					autoState = AFTER_MOVE;
-					break;
-				case AFTER_MOVE :
-					debug[2] = AUTO_STATE_ARRAY[autoState];
-					//move again
-					if (vertHeight >= THREE_METER) autoState = DONE;
-					break;
-				case DONE :
-					debug[2] = AUTO_STATE_ARRAY[autoState];
-					//u wot m8
-					break;
-                 /**
-                case LEFT:
-					Debug[1] = AUTO_STATE_ARRAY[autoState];
-					//move until goal range
-					if (!canShoot(vertHeight) && !hasFired){
-						autoMove();
-					}
-					//wait till hot
-					else if (curGoal.isHot && !hasFired){
-						//set shootings states
-						state = RELEASE;
-					//shoot
-						autoStates(currentTime);
-						hasFired = true;
-						System.out.println("#Shotsfired");
-					}
-					else if(hasFired && vertHeight > THREE_METER){
-					//move forward and make sure it doesn't crash in some manner
-						autoMove();
-						}
-					else autoState = DONE;
-					
-					break;
-				case RIGHT:
-					//Right code
-					break;
-					 */
-				default: System.out.println("This code doesn't work. (autonomous() switch thing).");
-				break;
+                case MOVE_FORWARD:
+                    //move forward
+                    if (autoMove((SHOOT_METER - 10))) {
+                        autoState = SHOOT;
+                    }
+                    break;
+                case SHOOT:
+                    //shoot
+                    //state = RELEASE;
+                    if (currentHotGoal == Point.LEFT || currentHotGoal == Point.RIGHT) {
+                        //autoStates(currentTime);
+                        autoState = AFTER_MOVE; //remove this 
+                    }
+                    break;
+                case AFTER_MOVE:
+                    //move again
+                    if (autoMove(THREE_METER)) {
+                        autoState = DONE;
+                    }
+                    break;
+                case DONE:
+                    //u wot m8
+                    break;
+                /**
+                 * case LEFT: Debug[1] = AUTO_STATE_ARRAY[autoState]; //move
+                 * until goal range if (!canShoot(vertHeight) && !hasFired){
+                 * autoMove(); } //wait till hot else if (curGoal.isHot &&
+                 * !hasFired){ //set shootings states state = RELEASE; //shoot
+                 * autoStates(currentTime); hasFired = true;
+                 * System.out.println("#Shotsfired"); } else if(hasFired &&
+                 * vertHeight > THREE_METER){ //move forward and make sure it
+                 * doesn't crash in some manner autoMove(); } else autoState =
+                 * DONE;
+                 *
+                 * break; case RIGHT: //Right code break;
+                 */
+                default:
+                    System.out.println("This code doesn't work. (autonomous() switch thing).");
+                    break;
             }
 
             Debug.log(debug);
@@ -265,26 +240,29 @@ public class RobotMain extends SimpleRobot {
         leftDrive = 0.0;
         currSpeedRight = 0.0;
         currSpeedLeft = 0.0;
+        state = READY;
+        deceled = false;
         while (isOperatorControl() && isEnabled()) {
+            imageProcessing();
             double speed = left.getY() * joyScale;
             long currentTime = System.currentTimeMillis();
             joyScale = scaleZ(left.getZ());
             joyScale2 = scaleZ(right.getZ());
             debug[1] = "Speed: " + speed;
             debug[2] = STATE_ARRAY[state];
-            
-            
-            if(left.getRawButton(TOGGLE_DECEL_BUTTON)){
-                if(deceled){
+
+
+            if (left.getRawButton(TOGGLE_DECEL_BUTTON)) {
+                if (deceled) {
                     deceled = false;//drive.setDriveDecelSkip(false);
-                }
-                else{
+                } else {
                     deceled = true;
                     //drive.setDriveDecelSkip(true);
                 }
+            }
 
-            if (canShoot(vertHeight)) {
-                debug[2] = debug[2] + " SHOOT NOW!";
+            if (canShoot(SHOOT_METER)) {
+                debug[2] = debug[2] + " SHOOT!";
             } else {
                 debug[2] = STATE_ARRAY[state];
 
@@ -329,7 +307,7 @@ public class RobotMain extends SimpleRobot {
                 winchPressed = false;
             }
 
-            this.doingWinchStuff(debug);
+            //this.doingWinchStuff(debug);
 
             this.doArcadeDrive(debug);
 
@@ -451,7 +429,8 @@ public class RobotMain extends SimpleRobot {
                     }
                 }
             }
-
+            
+            /**
             if (left.getRawButton(TRIGGER_BUTTON_UP)) {
                 // Window motor positive
                 drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
@@ -461,7 +440,7 @@ public class RobotMain extends SimpleRobot {
             } else if (triggerStart == 0L) {
                 //trigger.set(0);
                 drive.set(TRIGGER_PORT, 0);
-            }
+            }//*/
 
 
             long timeDelta = currentTime - lastUpdate;
@@ -474,34 +453,34 @@ public class RobotMain extends SimpleRobot {
             lastUpdate = System.currentTimeMillis();
         }
     }
+
+    public double angleTurned(double oldX, double newX, double total) {
+        double oneDeg = total / 80;
+        return (newX - oldX) / oneDeg;
     }
 
-	public double angleTurned (double oldX, double newX, double total) {
-		double oneDeg = total/80;
-		return (newX- oldX)/oneDeg;
-	}
+    public boolean canShoot(int pixelSize) {
+        if (vertHeight >= pixelSize) {
+            //drive.setDriveDecelSkip(true);
+            deceled = true;
+            return true;
+        }
+        return false;
+    }
 
-	public boolean canShoot (double pixelSize) {
-		if(pixelSize >= (SHOOT_METER - 10) ) {
-                    //drive.setDriveDecelSkip(true);
-                    deceled = true;
-                    return true;
-		}
-		return false;
-	}
+    public boolean autoMove(int pix) {
+        if (canShoot(pix)) {
+            drive.tankDrive(0, 0, deceled);
+            deceled = false;
+            return true;
+        } else {
+            drive.tankDrive(-0.5, -0.5, deceled);
+            return false;
+        }
+    }
 
-	public void autoMove () {
-		if(canShoot(vertHeight)) {
-                    drive.tankDrive(0,0, deceled);
-		} 
-                else {
-                    drive.tankDrive(-0.5, -0.5, deceled);
-                }
-	}
-
-	public void endMove () {
-		
-	}
+    public void endMove() {
+    }
 
     private void imageProcessing() {
         try {
@@ -612,10 +591,10 @@ public class RobotMain extends SimpleRobot {
                         : (cur.getSide() == Point.LEFT ? "Left" : "Right");
 
                 String h = cur.isHot() ? "Hot" : "NotHot";
-                
+
                 if (cur.isHot()) {
-					currentHotGoal = cur.getSide();
-				}
+                    currentHotGoal = cur.getSide();
+                }
 
                 System.out.println("Goal " + i + ": " + o + " " + s + " " + h);
             }
@@ -671,6 +650,7 @@ public class RobotMain extends SimpleRobot {
                 if (loosening(currTime, triggerStart)) {
                     triggerStart = 0;
                     state = READY;
+                    autoState = AFTER_MOVE;
                 }
                 break;
             default:
@@ -783,14 +763,17 @@ public class RobotMain extends SimpleRobot {
         //currSpeedLeft = accelerate(currSpeedLeft,leftDrive, timeDiff);
         //currSpeedRight = accelerate(currSpeedRight,rightDrive, timeDiff); //
         debug[3] = "Scale: " + joyScale;
-        debug[4] = "Left: " + getDriveSpeed(LEFT_DRIVE_FRONT) + " Right: " + getDriveSpeed(RIGHT_DRIVE_FRONT);
+        //debug[4] = "Left: " + getDriveSpeed(LEFT_DRIVE_FRONT) + " Right: " + getDriveSpeed(RIGHT_DRIVE_FRONT);
+        debug[4] = "Left: " + getDriveSpeed(6) + " Right: " + getDriveSpeed(4); //change this
         drive.tankDrive(leftMove, rightMove, deceled);
     }
 
+    /**
     private void autoDrive(double a, double b, String[] debug) {
         debug[4] = "Left: " + getDriveSpeed(LEFT_DRIVE_FRONT) + " Right: " + getDriveSpeed(RIGHT_DRIVE_FRONT);
         drive.tankDrive(a, b, deceled);
     }
+    * //*/
 
     private double getDriveSpeed(int port) {
         return drive.getAccelSpeed(port);

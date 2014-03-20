@@ -86,6 +86,6 @@ public class DriveSystemAccel extends DriveSystem {
     }
 
     public double getAccelSpeed(int port) {
-        return acceleration[locs[port]].getSpeed();
+        return acceleration[port].getSpeed();
     }
 }
