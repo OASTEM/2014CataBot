@@ -213,7 +213,7 @@ public class RobotMain extends SimpleRobot {
                     if(loosening(currentTime, triggerStart)){
                         if (currentHotGoal == Point.LEFT || currentHotGoal == Point.RIGHT || (currentTime - shootingTime) >= 6000L ) {
                             triggerStart = currentTime;
-                            autoStates(currentTime);
+                            autoStatesAuto(currentTime);
                             debug[3] = "#shotsfired";
                             finalMoveTime = currentTime;
 
@@ -224,16 +224,16 @@ public class RobotMain extends SimpleRobot {
                     break;
                 case AFTER_MOVE:
                     //move again
-                    autoStates(currentTime);
+                    //autoStates(currentTime);
                     if (autoMove(THREE_METER) || (currentTime - finalMoveTime) >= 5000L ) {
                         autoState = DONE;
                     }
                     
                     break;
                 case DONE:
-                    autoStates(currentTime);
+                    //autoStates(currentTime);
                     //u wot m8
-                    debug[3] = "I'm finished, be gentle";
+                    debug[3] = "I'm finished, be gentle senpai";
                     triggerStart = 0L;
                     break;
                 /**
@@ -710,6 +710,45 @@ System.out.println(winchLin.get());
                 if (resetting(currTime, triggerStart)) {
                     triggerStart = 0L;
                     state = NOT_READY;
+                }
+                break;
+            case PULL:
+                if (pulling(currTime, triggerStart)) {
+                    triggerStart = currTime;
+                    state = LOOSEN;
+                }
+                break;
+            case LOOSEN:
+                if (loosening(currTime, triggerStart)) {
+                    triggerStart = 0L;
+                    state = READY;
+                    autoState = AFTER_MOVE;
+                }
+                break;
+            default:
+                break; //nothing should be happening here
+            }
+    }
+    
+    private void autoStatesAuto(long currTime) {
+        switch (state) {
+            case RELEASE:
+                if (release(currTime, triggerStart)) {
+                    triggerStart = currTime;
+                    state = FIRING;
+                }
+                //triggerStart = currTime;
+                break;//
+            case FIRING:
+                if (firing(currTime, triggerStart)) {
+                    triggerStart = currTime;
+                    state = RESET;
+                }
+                break;
+            case RESET:
+                if (resetting(currTime, triggerStart)) {
+                    triggerStart = 0L;
+                    state = PULL;
                 }
                 break;
             case PULL:
