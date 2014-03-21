@@ -36,6 +36,7 @@ public class RobotMain extends SimpleRobot {
     public static final int LEFT_DRIVE_REAR = 7;
     public static final int LEFT_DRIVE_FRONT = 6;
     public static final int INTAKE_SPIKE = 7;
+    public static final int INTAKE_SPIKE_2 = 3;
     public static final int WINCH_SPIKE = 8;
     public static final int TRIGGER_PORT = 2;
     // Buttons:
@@ -60,6 +61,7 @@ public class RobotMain extends SimpleRobot {
     private static final double TRIGGER_SPEED_DOWN = 0.25;
     private DriveSystemAccel drive = DriveSystemAccel.getAcceleratedInstance();
     private VexSpike intake;
+    private VexSpike intake2;
     private VexSpike winch;
     // User Control States
     public static final int START = 0;
@@ -147,6 +149,7 @@ public class RobotMain extends SimpleRobot {
         //drive.initializeDrive(6, 4);
         drive.setSafety(false);
         intake = new VexSpike(INTAKE_SPIKE);
+        intake2 = new VexSpike(INTAKE_SPIKE_2);
         winch = new VexSpike(WINCH_SPIKE);
         drive.addVictor(TRIGGER_PORT);
         drive.addVictor(WINCH_PORT);
@@ -329,6 +332,8 @@ public class RobotMain extends SimpleRobot {
                 // HOLY CRAP STOP
                 drive.set(TRIGGER_PORT, 0);
                 winch.deactivate();
+                intake.deactivate();
+                intake2.deactivate();
                 drive.set(WINCH_PORT, 0);
                 triggerHasFired = false;
                 intakePressed = false;
@@ -341,6 +346,10 @@ public class RobotMain extends SimpleRobot {
                 triggerStart = 0L;
                 secondaryTriggerStart = 0L;
                 state = NOT_READY;
+                autoState = DONE;
+                wiggleWinch(0);
+                deceled = false;
+                drive.tankDrive(0.0,0.0,deceled);
             }
 
             if (left.getRawButton(WINCH_BUTTON_SPIKE)) {
@@ -358,18 +367,22 @@ public class RobotMain extends SimpleRobot {
             // Intake
             if (left.getRawButton(INTAKE_BUTTON)) {
                 intake.goForward();
+                intake2.goForward();
                 intakePressed = true;
             } else if (!left.getRawButton(INTAKE_BUTTON) && intakePressed) {
                 intake.deactivate();
+                intake2.deactivate();
                 intakePressed = false;
             }
 
             // Outtake
             if (left.getRawButton(OUTTAKE_BUTTON)) {
                 intake.goBackward();
+                intake2.goBackward();
                 outtakePressed = true;
             } else if (!left.getRawButton(OUTTAKE_BUTTON) && outtakePressed) {
                 intake.deactivate();
+                intake2.deactivate();
                 outtakePressed = false;
             }
 
