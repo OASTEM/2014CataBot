@@ -112,6 +112,7 @@ public class RobotMain extends SimpleRobot {
     private double THRESHOLD = 0.0005;
     private DigitalInput fireLim = new DigitalInput(1);
     private DigitalInput winchLin = new DigitalInput(2);
+    //private DigitalInput bottomLim = new DigitalInput(3); //gablooza
     private long lastUpdate;
     private String[] debug = new String[6];
     private Joystick left = new Joystick(1);
@@ -144,7 +145,7 @@ public class RobotMain extends SimpleRobot {
         winch = new VexSpike(WINCH_SPIKE);
         drive.addVictor(TRIGGER_PORT);
         drive.addVictor(WINCH_PORT);
-        trigger = new Victor(TRIGGER_PORT);
+        //trigger = new Victor(TRIGGER_PORT);
 
         camera = AxisCamera.getInstance("10.40.79.11");
 
@@ -166,6 +167,8 @@ public class RobotMain extends SimpleRobot {
     public void autonomous() {
         debug[0] = "Autonomous mode";
         autoState = AUTO_START;
+        long shootingTime = 0L;
+        long finalMoveTime = 0L;
         while (isAutonomous() && isEnabled()) {
             long currentTime = System.currentTimeMillis();
             imageProcessing();
@@ -175,28 +178,51 @@ public class RobotMain extends SimpleRobot {
                     //autoMove();
                     //Determine left or right and set appropriate state
                     autoState = MOVE_FORWARD;
+                    triggerStart = currentTime;
+                    finalMoveTime = currentTime;
                     break;
                 case MOVE_FORWARD:
                     //move forward
-                    if (autoMove((SHOOT_METER - 10))) {
+                    boolean autoDone = false;
+                    boolean pullDone = false;
+                    if (autoMove((SHOOT_METER - 10)) || (currentTime - finalMoveTime) >= 5000L ) {
+                        quickDecel();
+                        autoDone = true;
+                    }
+                    if(autoPulling(currentTime, triggerStart)){
+                        pullDone = true;
+                    }
+                    if(autoDone == true && pullDone == true){
+                        triggerStart = currentTime;
+                        shootingTime = currentTime;
+                        finalMoveTime = 0L;
                         autoState = SHOOT;
                     }
+                    
                     break;
                 case SHOOT:
-                    //shoot
                     state = RELEASE;
-                    if (currentHotGoal == Point.LEFT || currentHotGoal == Point.RIGHT) {
-                        autoStates(currentTime);
+                    if(loosening(currentTime, triggerStart)){
+                        if (currentHotGoal == Point.LEFT || currentHotGoal == Point.RIGHT || (currentTime - shootingTime) >= 6000L ) {
+                            triggerStart = currentTime;
+                            autoStates(currentTime);
+                            debug[3] = "#shotsfired";
+                            finalMoveTime = currentTime;
+                        }
                     }
+                    
+                    
                     break;
                 case AFTER_MOVE:
                     //move again
-                    if (autoMove(THREE_METER)) {
+                    if (autoMove(THREE_METER) || (currentTime - finalMoveTime) >= 5000L ) {
                         autoState = DONE;
                     }
                     break;
                 case DONE:
                     //u wot m8
+                    debug[3] = "I'm finished, be gentle";
+                    triggerStart = 0L;
                     break;
                 /**
                  * case LEFT: Debug[1] = AUTO_STATE_ARRAY[autoState]; //move
@@ -226,15 +252,17 @@ public class RobotMain extends SimpleRobot {
      */
     public void operatorControl() {
         debug[0] = "User Control Mode";
+        triggerStart = 0L;
         boolean triggerHasFired = false;
         boolean intakePressed = false;
         boolean outtakePressed = false;
         boolean winchPressed = false;
         boolean winchMovePressed = false;
-        boolean winchWiggled = false;
-        boolean afterFired = false;
-        int winchWiggleCount = 0;
+        //boolean winchWiggled = false;
+        //boolean afterFired = false;
+        //int winchWiggleCount = 0;
         long secondaryTriggerStart = 0L;
+        long decelStart = 0L;
         rightDrive = 0.0;
         leftDrive = 0.0;
         currSpeedRight = 0.0;
@@ -252,9 +280,16 @@ public class RobotMain extends SimpleRobot {
 
 
             if (left.getRawButton(TOGGLE_DECEL_BUTTON)) {
-                if (deceled) {
+                if (deceled && ( currentTime - decelStart >= 2000L) ) {
                     deceled = false;//drive.setDriveDecelSkip(false);
-                } else {
+                    decelStart = currentTime;
+                } 
+                else if(currentTime - decelStart <= 2000L){
+                    //deceled = false;
+                    //nothing
+                }
+                else {
+                    decelStart = currentTime;
                     deceled = true;
                     //drive.setDriveDecelSkip(true);
                 }
@@ -291,9 +326,9 @@ public class RobotMain extends SimpleRobot {
                 outtakePressed = false;
                 winchPressed = false;
                 winchMovePressed = false;
-                winchWiggled = false;
-                afterFired = false;
-                winchWiggleCount = 0;
+                //winchWiggled = false;
+                //afterFired = false;
+                //winchWiggleCount = 0;
                 triggerStart = 0L;
                 secondaryTriggerStart = 0L;
             }
@@ -373,8 +408,8 @@ public class RobotMain extends SimpleRobot {
 
             /**
              * TODO: Rewrite this to a switch case
-             */
-            if (left.getRawButton(TRIGGER_BUTTON) || triggerStart > 0L) {
+             
+            if (left.getRawButton(SECONDARY_TRIGGER_BUTTON) || triggerStart > 0L) {
                 if (triggerStart == 0L) {
                     triggerStart = currentTime;
                     winch.goForward();
@@ -427,7 +462,7 @@ public class RobotMain extends SimpleRobot {
                         }
                     }
                 }
-            }
+            }//*/
             
             
             if (left.getRawButton(TRIGGER_BUTTON_UP)) {
@@ -469,14 +504,18 @@ public class RobotMain extends SimpleRobot {
 
     public boolean autoMove(int pix) {
         if (canShoot(pix)) {
-            deceled = true;
-            drive.tankDrive(0, 0, deceled);
-            deceled = false;
+            quickDecel();
             return true;
         } else {
-            drive.tankDrive(-0.5, -0.5, deceled);
+            drive.tankDrive(0.5, 0.5, deceled);
             return false;
         }
+    }
+    
+    private void quickDecel(){
+        deceled = true;
+        drive.tankDrive(0, 0, deceled);
+        deceled = false;
     }
 
     private void imageProcessing() {
@@ -643,7 +682,6 @@ public class RobotMain extends SimpleRobot {
                 }
                 break;
             case LOOSEN:
-
                 if (loosening(currTime, triggerStart)) {
                     triggerStart = 0;
                     state = READY;
@@ -697,7 +735,7 @@ public class RobotMain extends SimpleRobot {
         }
         return false;
     }
-
+//gotta change all this stuff gablooza
     private boolean pulling(long currTime, long trigStart) {
         if (currTime - trigStart < 3000L && !winchLin.get()) {
             wiggleWinch(0.5);
@@ -706,9 +744,18 @@ public class RobotMain extends SimpleRobot {
         wiggleWinch(0);
         return true;
     }
+    
+    private boolean autoPulling(long currTime, long trigStart){
+        if (currTime - trigStart < 400L){// && !bottomLim.get() ){
+            wiggleWinch(0.5);
+            return false;
+        }
+        wiggleWinch(0);
+        return true;
+    }
 
     private boolean loosening(long currTime, long trigStart) {
-        if (currTime - trigStart < 400L) {
+        if (currTime - trigStart < 400L){// && bottomLim.get()) {
             wiggleWinch(-0.1);
             return false;
         }//
