@@ -61,8 +61,10 @@ public class RobotMain extends SimpleRobot {
     private static final double TRIGGER_SPEED_DOWN = 0.25;
     private DriveSystemAccel drive = DriveSystemAccel.getAcceleratedInstance();
     private VexSpike intake;
-    private VexSpike intake2;
+    private VexSpike intake2; //special spike
     private VexSpike winch;
+    
+    public static final long AUTO_MOVE_TIME = 2000L;
     // User Control States
     public static final int START = 0;
     public static final int STARTPULL = 1;
@@ -91,12 +93,14 @@ public class RobotMain extends SimpleRobot {
     public static final int SHOOT = 2;
     public static final int AFTER_MOVE = 3;
     public static final int DONE = 4;
+    public static final int PULL_DOWN = 5;
     public static final String[] AUTO_STATE_ARRAY = {
         "Start",
         "Moving Forward",
         "Shoot",
         "After Move",
-        "Done"
+        "Done",
+        "Pull Down"
     };
     private int autoState;
     // corresponding distance from using pixel height of vertical vision target
@@ -106,6 +110,7 @@ public class RobotMain extends SimpleRobot {
     public static final int FIVE_METER = 111;
     public static final int SHOOT_METER = 101; //lol (5.46-5.48 meters)
     public static final int SIX_METER = 92;
+    public static final double PULL_DOWN_POWER = 0.75;
     private long accelTime;
     // acceleration per millisecond
     private long triggerStart = 0L;
@@ -136,8 +141,11 @@ public class RobotMain extends SimpleRobot {
     private double horzCenterMassX, horzCenterMassY, vertCenterMassX, vertCenterMassY;
     private int currentHotGoal = Point.INVALID;
     private int vertHeight;
+    
+    private long releaseCount = 0L;
 
     protected void robotInit() {
+        
         Debug.clear();
         Debug.log(1, 1, "Robot Initalized");
         state = START;
@@ -149,7 +157,10 @@ public class RobotMain extends SimpleRobot {
         //drive.initializeDrive(6, 4);
         drive.setSafety(false);
         intake = new VexSpike(INTAKE_SPIKE);
-        intake2 = new VexSpike(INTAKE_SPIKE_2);
+        intake2 = new VexSpike(INTAKE_SPIKE_2); //special spike
+        intake2.deactivate(); //special spike
+        intake.deactivate();
+        
         winch = new VexSpike(WINCH_SPIKE);
         drive.addVictor(TRIGGER_PORT);
         drive.addVictor(WINCH_PORT);
@@ -179,18 +190,25 @@ public class RobotMain extends SimpleRobot {
         long finalMoveTime = 0L;
         while (isAutonomous() && isEnabled()) {
             long currentTime = System.currentTimeMillis();
-            imageProcessing();
+            //imageProcessing();
             debug[2] = AUTO_STATE_ARRAY[autoState];
             switch (autoState) {
                 case AUTO_START:
                     //autoMove();
                     //Determine left or right and set appropriate state
-                    autoState = MOVE_FORWARD;
+                    //if(autoPulling(currentTime, triggerStart))
+                    autoState = PULL_DOWN;
                     triggerStart = currentTime;
                     finalMoveTime = currentTime;
                     break;
+                case PULL_DOWN :
+                    if(autoPulling(currentTime, triggerStart)){
+                        autoState = MOVE_FORWARD;
+                        triggerStart = currentTime;
+                    }
                 case MOVE_FORWARD:
                     //move forward
+                    /**
                     boolean autoDone = false;
                     boolean pullDone = false;
                     if (autoMove((SHOOT_METER - 10)) || (currentTime - finalMoveTime) >= 5000L ) {
@@ -206,17 +224,21 @@ public class RobotMain extends SimpleRobot {
                         finalMoveTime = 0L;
                         autoState = SHOOT;
                     }
+                    //*/
                     
+                    if(autoMoveTime(currentTime)){
+                        autoState = SHOOT;
+                        triggerStart = currentTime;
+                        state = RELEASE;
+                    }//*/
                     break;
                 case SHOOT:
-                    state = RELEASE;
                     if(loosening(currentTime, triggerStart)){
-                        if (currentHotGoal == Point.LEFT || currentHotGoal == Point.RIGHT || (currentTime - shootingTime) >= 6000L ) {
+                        if ( currentHotGoal == Point.LEFT || currentHotGoal == Point.RIGHT || (currentTime - shootingTime) >= 5000L ) {
                             triggerStart = currentTime;
                             autoStatesAuto(currentTime);
                             debug[3] = "#shotsfired";
                             finalMoveTime = currentTime;
-
                         }
                     }
                     
@@ -225,10 +247,16 @@ public class RobotMain extends SimpleRobot {
                 case AFTER_MOVE:
                     //move again
                     //autoStates(currentTime);
-                    if (autoMove(THREE_METER) || (currentTime - finalMoveTime) >= 5000L ) {
+                    /**if (autoMove(THREE_METER) || (currentTime - finalMoveTime) >= 5000L ) {
                         autoState = DONE;
                     }
-                    
+                    //*/
+                    /**
+                    if(autoPulling(currentTime, triggerStart)){
+                        autoState = DONE;
+                    }
+                    //*/
+                   autoState = DONE;
                     break;
                 case DONE:
                     //autoStates(currentTime);
@@ -280,10 +308,10 @@ public class RobotMain extends SimpleRobot {
         currSpeedRight = 0.0;
         currSpeedLeft = 0.0;
         state = READY;
-        deceled = false;
+        deceled = true;
         while (isOperatorControl() && isEnabled()) {
-            imageProcessing();
-            double speed = left.getY() * joyScale;
+            //imageProcessing();
+            //double speed = left.getY() * joyScale;
             long currentTime = System.currentTimeMillis();
             joyScale = scaleZ(left.getZ());
             joyScale2 = scaleZ(right.getZ());
@@ -308,10 +336,10 @@ public class RobotMain extends SimpleRobot {
             }
 
             if (canShoot(SHOOT_METER)) {
-                debug[2] = debug[2] + " SHOOT!";
-            } else {
-                debug[2] = STATE_ARRAY[state];
-
+                debug[2] =  " SHOOT!";
+            } 
+            else {
+                Debug.clearLine(2);
             }
 
             if (left.getRawButton(WINCH_BUTTON_UP)) {
@@ -375,7 +403,7 @@ public class RobotMain extends SimpleRobot {
                 intakePressed = false;
             }
 
-            // Outtake
+            // Outtake //NO OUTTAKIG
             if (left.getRawButton(OUTTAKE_BUTTON)) {
                 intake.goBackward();
                 intake2.goBackward();
@@ -422,6 +450,7 @@ System.out.println(winchLin.get());
                     if (left.getRawButton(TRIGGER_BUTTON)) {
                         state = RELEASE;
                         triggerStart = currentTime;
+                        releaseCount = 0L;
                     }
                     if (winchLin.get()){
                         state = NOT_READY;
@@ -547,6 +576,17 @@ System.out.println(winchLin.get());
             drive.tankDrive(0.5, 0.5, deceled);
             return false;
         }
+    }
+    public boolean autoMoveTime(long time){
+        if(time - triggerStart < AUTO_MOVE_TIME){
+            drive.tankDrive(0.5,0.5,deceled);
+            return false;
+        }
+        else{
+            quickDecel();
+            return true;
+        }
+        
     }
     
     private void quickDecel(){
@@ -779,17 +819,20 @@ System.out.println(winchLin.get());
     }
 
     private boolean releaseGear(long currTime, long trigStart) {
-        if (currTime - trigStart > 500L) {
+        if (currTime - trigStart > 2000L) {
             wiggleWinch(0);
+            System.out.println(releaseCount);
+            releaseCount = 0L;
             return true;
-        } else if (currTime - trigStart > 100L) {
-            wiggleWinch(0.10);
+        } else {
+            releaseCount = releaseCount + 1;
+            wiggleWinch(-0.60);
         }
         return false;
     }
 
     private boolean firing(long currTime, long trigStart) {
-        if (currTime - trigStart > 1600L) {
+        if (currTime - trigStart > 1800L) {
             return true;
         } else if (currTime - trigStart > 600L) {
             drive.set(TRIGGER_PORT, 0);
@@ -802,7 +845,7 @@ System.out.println(winchLin.get());
     private boolean resetting(long currTime, long trigStart) {
         winch.deactivate();
         if (releaseGear(currTime, trigStart)) {
-            if (fireLim.get() && currTime - trigStart < 3000L) {
+            if (fireLim.get() && currTime - trigStart < 4000L) {
                 System.out.println("I'm here and resseting");//reference
                 drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
                 return false;
@@ -815,7 +858,7 @@ System.out.println(winchLin.get());
 //gotta change all this stuff gablooza
     private boolean pulling(long currTime, long trigStart) {
         if (currTime - trigStart < 6000L && winchLin.get()) {
-            wiggleWinch(0.5);
+            wiggleWinch(PULL_DOWN_POWER);
             return false;
         }
         wiggleWinch(0);
@@ -823,8 +866,8 @@ System.out.println(winchLin.get());
     }
     
     private boolean autoPulling(long currTime, long trigStart){
-        if (currTime - trigStart < 400L) { // bottomLim.get()
-            wiggleWinch(0.5);
+        if (currTime - trigStart < 600L) { // bottomLim.get()
+            wiggleWinch(PULL_DOWN_POWER);
             return false;
         }
         wiggleWinch(0);
@@ -834,8 +877,8 @@ System.out.println(winchLin.get());
    
 
     private boolean loosening(long currTime, long trigStart) {
-        if (currTime - trigStart < 400L){// && !bottomLim.get()) {
-            wiggleWinch(-0.1);
+        if (currTime - trigStart < 500L){// && !bottomLim.get()) {
+            wiggleWinch(-0.2);
             return false;
         }//
         wiggleWinch(0);
@@ -849,7 +892,7 @@ System.out.println(winchLin.get());
         if (Math.abs(y) > zone) {
             winchMove = y;
         }
-        winchMove *= joyScale2 * -1;
+        winchMove *= joyScale2 * -1;    
 
         //debug[5] = "rScale: " + joyScale2 + " Winch: " + winchMove;
         drive.set(WINCH_PORT, winchMove);
