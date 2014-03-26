@@ -55,6 +55,7 @@ public class RobotMain extends SimpleRobot {
     // Right Joystick
     public static final int EMERGENCY_STOP_BUTTON_RIGHT = 9;
     public static final int PULLBACK_BUTTON = 6;
+    public static final int TRIGGER_BUTTON_PULL_BACK = 10;
     
     
     private static final double TRIGGER_SPEED_UP = -0.75;
@@ -64,7 +65,8 @@ public class RobotMain extends SimpleRobot {
     private VexSpike intake2; //special spike
     private VexSpike winch;
     
-    public static final long AUTO_MOVE_TIME = 2000L;
+    public static final long AUTO_MOVE_TIME = 700L;
+    public static final long AUTO_MOVE_TIME_AGAIN = 1000L;
     // User Control States
     public static final int START = 0;
     public static final int STARTPULL = 1;
@@ -75,6 +77,7 @@ public class RobotMain extends SimpleRobot {
     public static final int PULL = 6;
     public static final int LOOSEN = 7;
     public static final int NOT_READY = 8;
+    public static final int ADDITION_RESET = 9;
     public static final String[] STATE_ARRAY = {
         "Start",
         "releasing intakes",
@@ -84,7 +87,8 @@ public class RobotMain extends SimpleRobot {
         "putting things back",
         "this winch be tripping",
         "much loose",
-        "We aint ready" 
+        "We aint ready",
+        "one more time"
     };
     private int state;
     // Autonomous States
@@ -94,13 +98,15 @@ public class RobotMain extends SimpleRobot {
     public static final int AFTER_MOVE = 3;
     public static final int DONE = 4;
     public static final int PULL_DOWN = 5;
+    public static final int MOVE_AGAIN = 6;
     public static final String[] AUTO_STATE_ARRAY = {
         "Start",
         "Moving Forward",
         "Shoot",
         "After Move",
         "Done",
-        "Pull Down"
+        "Pull Down",
+        "Move Again"
     };
     private int autoState;
     // corresponding distance from using pixel height of vertical vision target
@@ -110,7 +116,7 @@ public class RobotMain extends SimpleRobot {
     public static final int FIVE_METER = 111;
     public static final int SHOOT_METER = 101; //lol (5.46-5.48 meters)
     public static final int SIX_METER = 92;
-    public static final double PULL_DOWN_POWER = 0.75;
+    public static final double PULL_DOWN_POWER = 0.50;
     private long accelTime;
     // acceleration per millisecond
     private long triggerStart = 0L;
@@ -190,7 +196,7 @@ public class RobotMain extends SimpleRobot {
         long finalMoveTime = 0L;
         while (isAutonomous() && isEnabled()) {
             long currentTime = System.currentTimeMillis();
-            //imageProcessing();
+            imageProcessing();
             debug[2] = AUTO_STATE_ARRAY[autoState];
             switch (autoState) {
                 case AUTO_START:
@@ -226,7 +232,7 @@ public class RobotMain extends SimpleRobot {
                     }
                     //*/
                     
-                    if(autoMoveTime(currentTime)){
+                    if(autoMoveTime(currentTime, AUTO_MOVE_TIME)){
                         autoState = SHOOT;
                         triggerStart = currentTime;
                         state = RELEASE;
@@ -235,10 +241,9 @@ public class RobotMain extends SimpleRobot {
                 case SHOOT:
                     if(loosening(currentTime, triggerStart)){
                         if ( currentHotGoal == Point.LEFT || currentHotGoal == Point.RIGHT || (currentTime - shootingTime) >= 5000L ) {
+                            autoState = AFTER_MOVE;
                             triggerStart = currentTime;
-                            autoStatesAuto(currentTime);
-                            debug[3] = "#shotsfired";
-                            finalMoveTime = currentTime;
+                            state = RELEASE;
                         }
                     }
                     
@@ -256,12 +261,22 @@ public class RobotMain extends SimpleRobot {
                         autoState = DONE;
                     }
                     //*/
-                   autoState = DONE;
+                    //triggerStart = currentTime;
+                     autoStatesAuto(currentTime);
+                            debug[3] = "#shotsfired";
+                            //finalMoveTime = currentTime;
+                   //autoState = DONE;
                     break;
+                case MOVE_AGAIN :
+                    if(autoMoveTime(currentTime, AUTO_MOVE_TIME_AGAIN)){
+                        autoState = DONE;
+                        debug[3] = "again";
+                    }
                 case DONE:
                     //autoStates(currentTime);
                     //u wot m8
-                    debug[3] = "I'm finished, be gentle senpai";
+                    debug[3] = "I'm finished";
+                    debug[4] = "be gentle senpai";
                     triggerStart = 0L;
                     break;
                 /**
@@ -318,7 +333,18 @@ public class RobotMain extends SimpleRobot {
             //debug[1] = "Speed: " + speed;
             debug[1] = STATE_ARRAY[state];
 
-
+            
+            if (right.getRawButton(TRIGGER_BUTTON_PULL_BACK)){
+                if(fireLim.get()){
+                    drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
+                    debug[2] = "I'm going back";
+                }
+                else{
+                    drive.set(TRIGGER_PORT, 0.0);
+                    Debug.clearLine(2);
+                    debug[2] = "Stop pushing me";
+                }
+            }
             if (left.getRawButton(TOGGLE_DECEL_BUTTON)) {
                 if (deceled && ( currentTime - decelStart >= 2000L) ) {
                     deceled = false;//drive.setDriveDecelSkip(false);
@@ -334,13 +360,14 @@ public class RobotMain extends SimpleRobot {
                     //drive.setDriveDecelSkip(true);
                 }
             }
-
+            /**
             if (canShoot(SHOOT_METER)) {
                 debug[2] =  " SHOOT!";
             } 
             else {
                 Debug.clearLine(2);
             }
+            //*/
 
             if (left.getRawButton(WINCH_BUTTON_UP)) {
                 drive.set(WINCH_PORT, 1.0);
@@ -350,11 +377,12 @@ public class RobotMain extends SimpleRobot {
                 winchMovePressed = true;
             }
 
+            /**
             if (winchMovePressed && (!left.getRawButton(WINCH_BUTTON_UP)
                     || !left.getRawButton(WINCH_BUTTON_DOWN))) {
                 drive.set(WINCH_PORT, 0);
                 winchMovePressed = false;
-            }
+            }//*/
 
             if (left.getRawButton(EMERGENCY_STOP_BUTTON) || right.getRawButton(EMERGENCY_STOP_BUTTON_RIGHT)) {
                 // HOLY CRAP STOP
@@ -444,7 +472,7 @@ public class RobotMain extends SimpleRobot {
                 }
             }
 
-System.out.println(winchLin.get());
+//println(winchLin.get());
             switch (state) {
                 case READY:
                     if (left.getRawButton(TRIGGER_BUTTON)) {
@@ -577,8 +605,8 @@ System.out.println(winchLin.get());
             return false;
         }
     }
-    public boolean autoMoveTime(long time){
-        if(time - triggerStart < AUTO_MOVE_TIME){
+    public boolean autoMoveTime(long time, long moveTime){
+        if(time - triggerStart < moveTime){
             drive.tankDrive(0.5,0.5,deceled);
             return false;
         }
@@ -732,6 +760,7 @@ System.out.println(winchLin.get());
     }
 
     private void autoStates(long currTime) {
+        
         switch (state) {
             case RELEASE:
                 if (release(currTime, triggerStart)) {
@@ -748,6 +777,12 @@ System.out.println(winchLin.get());
                 break;
             case RESET:
                 if (resetting(currTime, triggerStart)) {
+                    triggerStart = currTime;
+                    state = ADDITION_RESET;
+                }
+                break;
+            case ADDITION_RESET :
+                if (fireLimReset(currTime, triggerStart)){
                     triggerStart = 0L;
                     state = NOT_READY;
                 }
@@ -787,8 +822,14 @@ System.out.println(winchLin.get());
                 break;
             case RESET:
                 if (resetting(currTime, triggerStart)) {
-                    triggerStart = 0L;
+                    triggerStart = currTime;
                     state = PULL;
+                }
+                break;
+            case ADDITION_RESET :
+                if (fireLimReset(currTime, triggerStart)){
+                    triggerStart = 0L;
+                    state = NOT_READY;
                 }
                 break;
             case PULL:
@@ -799,9 +840,9 @@ System.out.println(winchLin.get());
                 break;
             case LOOSEN:
                 if (loosening(currTime, triggerStart)) {
-                    triggerStart = 0L;
+                    triggerStart = currTime;
                     state = READY;
-                    autoState = AFTER_MOVE;
+                    autoState = MOVE_AGAIN;
                 }
                 break;
             default:
@@ -819,14 +860,15 @@ System.out.println(winchLin.get());
     }
 
     private boolean releaseGear(long currTime, long trigStart) {
-        if (currTime - trigStart > 2000L) {
+        System.out.println(currTime +":"+triggerStart);
+        if (currTime - trigStart > 500L) {
             wiggleWinch(0);
             System.out.println(releaseCount);
             releaseCount = 0L;
             return true;
         } else {
             releaseCount = releaseCount + 1;
-            wiggleWinch(-0.60);
+            wiggleWinch(-0.10);
         }
         return false;
     }
@@ -845,15 +887,19 @@ System.out.println(winchLin.get());
     private boolean resetting(long currTime, long trigStart) {
         winch.deactivate();
         if (releaseGear(currTime, trigStart)) {
-            if (fireLim.get() && currTime - trigStart < 4000L) {
-                System.out.println("I'm here and resseting");//reference
-                drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
-                return false;
-            }
-            drive.set(TRIGGER_PORT, 0);
             return true;
         }
         return false;
+    }
+    
+    private boolean fireLimReset(long currTime, long trigStart){
+        if (fireLim.get() && currTime - trigStart < 5200L) {
+                //System.out.println("I'm here and resseting");//reference
+           drive.set(TRIGGER_PORT, TRIGGER_SPEED_DOWN);
+           return false;
+       }
+       drive.set(TRIGGER_PORT, 0);
+       return true;
     }
 //gotta change all this stuff gablooza
     private boolean pulling(long currTime, long trigStart) {
@@ -886,6 +932,7 @@ System.out.println(winchLin.get());
     }
 
     private void doingWinchStuff(String[] debug) {
+        if(state == READY || state == NOT_READY){
         double y = right.getY();
         double winchMove = 0.0;
         double zone = 0.04;
@@ -895,7 +942,9 @@ System.out.println(winchLin.get());
         winchMove *= joyScale2 * -1;    
 
         //debug[5] = "rScale: " + joyScale2 + " Winch: " + winchMove;
+        
         drive.set(WINCH_PORT, winchMove);
+        }
     }
 
     private void wiggleWinch(double pow) {
