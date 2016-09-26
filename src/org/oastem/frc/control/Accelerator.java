@@ -7,6 +7,13 @@ package org.oastem.frc.control;
  * Each accelerator knows its own speed and a couple of important factors
  * This class allows motors to accelerate at a gradual (or not) pace
  * 
+ * Acceleration only occurs when:
+ *  1 - the desired speed is signifcantly larger/smaller than the 
+ *      current speed (elimnates changes in speed that were NOT 
+ *      deliberate)
+ *  2 - an appropriate amount of time has passed since the last
+ *      acceleration (allows for gradual acceleration)
+ * 
  * NOTES:
  * commSpeed -> commanded speed -> the speed the drive desires
  * speed -> the current speed of this accelerator
